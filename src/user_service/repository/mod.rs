@@ -5,6 +5,8 @@ use async_trait::async_trait;
 use err::Result;
 use mockall::automock;
 
+mod libsql_implementation;
+
 #[automock]
 #[async_trait]
 pub trait UserRepository: Send + Sync {
