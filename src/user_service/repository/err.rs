@@ -1,11 +1,14 @@
 use std::result;
-
 use thiserror::Error;
 
-pub type Result<T> = result::Result<T, Error>;
+pub type Result<T> = result::Result<T, UserRepositoryError>;
 
 #[derive(Error, Debug)]
-pub enum Error {
+pub enum UserRepositoryError {
     #[error("Internal database error: {0}")]
     InternalDbError(#[from] Box<dyn std::error::Error>),
+    #[error("User not found")]
+    UserNotFound,
+    #[error("Database connection error: {0}")]
+    ConnectionError(#[from] libsql::Error),
 }
