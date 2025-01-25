@@ -13,8 +13,8 @@ pub enum UserServiceError {
     PasswordHashError(String),
     #[error("Password verification error: {0}")]
     PasswordVerificationError(String),
-    #[error("Auth failed")]
-    AuthenticationFailed,
+    #[error("Auth failed with message {0}")]
+    AuthenticationFailed(String),
     #[error("Token provider error: {0}")]
     TokenProviderError(#[from] TokenProviderError),
 }

@@ -1,6 +1,10 @@
 use std::sync::Arc;
 
+use axum::http::HeaderMap;
 use axum::{extract::State, http::StatusCode, routing::post, Json, Router};
+use axum_extra::extract::cookie::Cookie;
+use serde::{Deserialize, Serialize};
+use tracing::error;
 
 use crate::global_traits::HttpService;
 
@@ -9,6 +13,8 @@ use super::token_provider::TokenProvider;
 use super::{domain::UserCreationInfo, repository::UserRepository, use_cases::UserService};
 
 use super::unique_identifier::{EMailIdentifier, PhoneIdentifier, UniqueIdentifier};
+
+use axum_extra::extract::CookieJar;
 
 pub struct UserHttpServer {
     user_repository: Arc<dyn UserRepository>,
@@ -47,6 +53,7 @@ impl HttpService for UserHttpServer {
 
         Router::new()
             .route("/user", post(create_user))
+            .route("/log_in", post(login_user))
             .with_state(user_service)
     }
 }
@@ -57,6 +64,39 @@ async fn create_user(
 ) -> StatusCode {
     match state.create_user(user_creation_info).await {
         Ok(_) => StatusCode::CREATED,
-        Err(_) => StatusCode::INTERNAL_SERVER_ERROR,
+        Err(err) => {
+            error!("Error creating user: {err}");
+            StatusCode::INTERNAL_SERVER_ERROR
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct AuthInfo {
+    identificacion: String,
+    contrasena: String,
+}
+
+pub async fn login_user(
+    State(service): State<UserService>,
+    jar: CookieJar,
+    Json(payload): Json<AuthInfo>,
+) -> Result<(HeaderMap, CookieJar), StatusCode> {
+    match service
+        .authenticate_user(payload.identificacion, payload.contrasena)
+        .await
+    {
+        Ok(token) => {
+            let cookie = Cookie::build(("auth_token", token))
+                .http_only(true)
+                .secure(true);
+
+            let jar = jar.add(cookie);
+            Ok((HeaderMap::new(), jar))
+        }
+        Err(err) => {
+            error!("Error authenticating user: {err}");
+            Err(StatusCode::UNAUTHORIZED)
+        }
     }
 }

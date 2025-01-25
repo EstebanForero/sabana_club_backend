@@ -42,9 +42,13 @@ impl UserService {
     }
 
     pub async fn authenticate_user(&self, identifier: String, password: String) -> Result<String> {
-        let user_id = match self.unique_identifiers.identify(identifier).await {
+        let user_id = match self.unique_identifiers.identify(identifier.clone()).await {
             Some(user_id) => user_id,
-            None => return Err(UserServiceError::AuthenticationFailed),
+            None => {
+                return Err(UserServiceError::AuthenticationFailed(format!(
+                    "Cannot identify user with: {identifier}"
+                )))
+            }
         };
 
         let stored_password = self.user_repository.get_user_password(&user_id).await?;
@@ -52,7 +56,9 @@ impl UserService {
             .map_err(|err| UserServiceError::PasswordVerificationError(err.to_string()))?;
 
         if !is_authenticated {
-            return Err(UserServiceError::AuthenticationFailed);
+            return Err(UserServiceError::AuthenticationFailed(
+                "In the password verification, the user is not authenticated".to_string(),
+            ));
         }
 
         let token = self.token_provider.generate_token(user_id)?;

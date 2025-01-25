@@ -1,6 +1,7 @@
 use std::error::Error;
 
 use axum::Router;
+use tracing::info;
 
 use crate::global_traits::HttpService;
 
@@ -18,6 +19,8 @@ pub async fn start_http_server(
 
     let ip_addr = format!("0.0.0.0:{port}");
     let listener = tokio::net::TcpListener::bind(ip_addr).await?;
+
+    info!("Listenig in the port: {port}");
 
     axum::serve(listener, main_router).await?;
 
