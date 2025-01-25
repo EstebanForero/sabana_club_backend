@@ -1,7 +1,7 @@
 mod domain;
-mod endpoints;
+pub mod endpoints;
 mod err;
 mod repository;
-mod token_provider;
-mod unique_identifier;
+pub mod token_provider;
+pub mod unique_identifier;
 mod use_cases;

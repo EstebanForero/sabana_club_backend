@@ -62,7 +62,7 @@ impl UniqueIdentifier for PhoneIdentifier {
     }
 }
 
-struct EMailIdentifier {
+pub struct EMailIdentifier {
     user_repository: Arc<dyn UserRepository>,
     next_identifier: Option<Arc<dyn UniqueIdentifier>>,
 }

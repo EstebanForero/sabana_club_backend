@@ -10,6 +10,7 @@ pub struct Claims {
     pub exp: usize,
 }
 
+#[derive(Clone)]
 pub struct TokenProvider {
     token_key: String,
 }
@@ -19,14 +20,14 @@ impl TokenProvider {
         Self { token_key }
     }
 
-    pub fn generate_token(&self, client_name: String) -> Result<String> {
+    pub fn generate_token(&self, client_id: String) -> Result<String> {
         let expiration = Utc::now()
             .checked_add_signed(Duration::hours(1))
             .expect("valid timestamp")
             .timestamp() as usize;
 
         let claims = Claims {
-            sub: client_name,
+            sub: client_id,
             exp: expiration,
         };
 

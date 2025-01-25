@@ -8,6 +8,7 @@ use super::repository::UserRepository;
 use super::token_provider::TokenProvider;
 use super::unique_identifier::UniqueIdentifier;
 
+#[derive(Clone)]
 pub struct UserService {
     user_repository: Arc<dyn UserRepository>,
     unique_identifiers: Arc<dyn UniqueIdentifier>,
