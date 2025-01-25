@@ -5,7 +5,7 @@ use serde::Deserialize;
 use tracing::{error, info};
 
 mod api_server;
-mod auth_service;
+mod models;
 
 mod tournament_service;
 mod trainings_service;
