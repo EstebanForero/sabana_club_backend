@@ -10,6 +10,7 @@ chrono = "0.4.39"
 dotenvy = "0.15.7"
 envy = "0.4.2"
 libsql = "0.6.0"
+mockall = "0.13.1"
 serde = "1.0.217"
 thiserror = "2.0.11"
 tokio = { version = "1.43.0", features = ["full"] }

@@ -35,11 +35,5 @@ async fn main() -> Result<(), Box<dyn Error>> {
         Err(err) => error!("Error starting http server: {err}"),
     };
 
-    let idk: Option<Box<dyn Something>> = None;
-
     Ok(())
-}
-
-trait Something: Sync {
-    async fn something(&self);
 }

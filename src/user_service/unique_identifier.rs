@@ -17,11 +17,7 @@ struct PhoneIdentifier {
 #[async_trait]
 impl UniqueIdentifier for PhoneIdentifier {
     async fn identify(&self, identification_token: String) -> Option<String> {
-        if !identification_token
-            .chars()
-            .into_iter()
-            .any(|char| !char.is_numeric())
-        {
+        if !identification_token.chars().any(|char| !char.is_numeric()) {
             let user_id = self
                 .user_repository
                 .get_user_id_by_phone_number(&identification_token)
