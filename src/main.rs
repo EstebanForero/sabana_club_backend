@@ -1,3 +1,5 @@
+use std::error::Error;
+
 mod api_server;
 mod auth_service;
 
@@ -6,8 +8,11 @@ mod trainings_service;
 mod tuition_service;
 mod user_service;
 
-fn main() {
+mod global_traits;
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn Error>> {
     tracing_subscriber::fmt::init();
 
-    println!("Hello, world!");
+    Ok(())
 }
