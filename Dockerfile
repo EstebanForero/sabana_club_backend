@@ -11,7 +11,7 @@ COPY --from=planner /app/recipe.json .
 RUN cargo chef cook --release
 COPY . .
 RUN cargo build --release
-RUN mv ./target/release/study_app_backend ./app
+RUN mv ./target/release/sabana_club_backend ./app
 
 FROM debian:stable-slim AS runtime
 WORKDIR /app
