@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use async_trait::async_trait;
-use tracing::error;
+use tracing::{error, info};
 
 use super::repository::UserRepository;
 
@@ -32,6 +32,7 @@ impl PhoneIdentifier {
 #[async_trait]
 impl UniqueIdentifier for PhoneIdentifier {
     async fn identify(&self, identification_token: String) -> Option<String> {
+        info!("Executing unique phone identifier");
         if identification_token.chars().all(|char| char.is_numeric()) {
             let user_id = self
                 .user_repository
@@ -82,6 +83,7 @@ impl EMailIdentifier {
 #[async_trait]
 impl UniqueIdentifier for EMailIdentifier {
     async fn identify(&self, identification_token: String) -> Option<String> {
+        info!("Executing unique email identifier");
         if identification_token.contains('@') && identification_token.contains('.') {
             let user_id = self
                 .user_repository
@@ -132,15 +134,17 @@ impl UserIdentifier {
 #[async_trait]
 impl UniqueIdentifier for UserIdentifier {
     async fn identify(&self, identification_token: String) -> Option<String> {
+        info!("Executing unique identifier");
         if !identification_token.is_empty() {
-            let user_id = self
+            let user = self
                 .user_repository
-                .get_user_id_by_email(&identification_token)
+                .get_user_by_id(&identification_token)
                 .await;
 
-            match user_id {
-                Ok(user_id) => {
-                    return Some(user_id);
+            match user {
+                Ok(user) => {
+                    info!("Returning user id: {}", user.id_persona);
+                    return Some(user.id_persona);
                 }
                 Err(err) => {
                     error!(

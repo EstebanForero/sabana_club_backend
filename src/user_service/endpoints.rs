@@ -2,9 +2,9 @@ use std::sync::Arc;
 
 use axum::extract::Path;
 use axum::http::HeaderMap;
-use axum::middleware;
 use axum::routing::get;
 use axum::{extract::State, http::StatusCode, routing::post, Json, Router};
+use axum::{middleware, Extension};
 use axum_extra::extract::cookie::Cookie;
 use serde::{Deserialize, Serialize};
 use tracing::error;
@@ -17,7 +17,9 @@ use super::repository::libsql_implementation::Repository;
 use super::token_provider::TokenProvider;
 use super::{domain::UserCreationInfo, repository::UserRepository, use_cases::UserService};
 
-use super::unique_identifier::{EMailIdentifier, PhoneIdentifier, UniqueIdentifier};
+use super::unique_identifier::{
+    EMailIdentifier, PhoneIdentifier, UniqueIdentifier, UserIdentifier,
+};
 
 use axum_extra::extract::CookieJar;
 
@@ -47,7 +49,7 @@ impl HttpService for UserHttpServer {
             self.user_repository.clone(),
             Some(email_unique_identifier),
         ));
-        let user_id_unique_identifier: Arc<dyn UniqueIdentifier> = Arc::new(PhoneIdentifier::new(
+        let user_id_unique_identifier: Arc<dyn UniqueIdentifier> = Arc::new(UserIdentifier::new(
             self.user_repository.clone(),
             Some(phone_unique_identifier),
         ));
@@ -62,6 +64,7 @@ impl HttpService for UserHttpServer {
 
         Router::new()
             .route("/test_auth", get(test_auth))
+            .route("/user", get(get_user))
             .layer(middleware::from_fn_with_state(
                 self.token_key.clone(),
                 auth_middleware,
@@ -82,6 +85,19 @@ async fn get_all_users(
     State(user_service): State<UserService>,
 ) -> Result<Json<Vec<UserInfo>>, StatusCode> {
     match user_service.get_users().await {
+        Ok(user_info) => Ok(Json(user_info)),
+        Err(err) => {
+            error!("Error fetching user by identification: {err}");
+            Err(StatusCode::INTERNAL_SERVER_ERROR)
+        }
+    }
+}
+
+async fn get_user(
+    State(user_service): State<UserService>,
+    Extension(user_id): Extension<String>,
+) -> Result<Json<UserInfo>, StatusCode> {
+    match user_service.get_user_by_identification(user_id).await {
         Ok(user_info) => Ok(Json(user_info)),
         Err(err) => {
             error!("Error fetching user by identification: {err}");
