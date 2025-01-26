@@ -33,8 +33,8 @@ impl TrainingRepository for TrainingRepositoryImpl {
     async fn create_training(&self, training: Training) -> Result<()> {
         let conn = self.get_connection().await?;
         conn.execute(
-            "INSERT INTO entrenamiento (id_entrenamiento, tiempo_minutos) VALUES (?1, ?2)",
-            libsql::params![training.id_entrenamiento, training.tiempo_minutos],
+            "INSERT INTO entrenamiento (id_entrenamiento, tiempo_minutos, nombre_entrenamiento) VALUES (?1, ?2, ?3)",
+            libsql::params![training.id_entrenamiento, training.tiempo_minutos, training.nombre_entrenamiento],
         )
         .await
         .map_err(|e| TrainingRepositoryError::DatabaseError(e.to_string()))?;
@@ -58,7 +58,7 @@ impl TrainingRepository for TrainingRepositoryImpl {
         let conn = self.get_connection().await?;
         let mut rows = conn
             .query(
-                "SELECT id_entrenamiento, tiempo_minutos FROM entrenamiento",
+                "SELECT id_entrenamiento, tiempo_minutos, nombre_entrenamiento FROM entrenamiento",
                 libsql::params![],
             )
             .await
@@ -76,6 +76,9 @@ impl TrainingRepository for TrainingRepositoryImpl {
                     .map_err(|e| TrainingRepositoryError::DatabaseError(e.to_string()))?,
                 tiempo_minutos: row
                     .get(1)
+                    .map_err(|e| TrainingRepositoryError::DatabaseError(e.to_string()))?,
+                nombre_entrenamiento: row
+                    .get(2)
                     .map_err(|e| TrainingRepositoryError::DatabaseError(e.to_string()))?,
             });
         }
