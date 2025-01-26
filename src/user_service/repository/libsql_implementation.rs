@@ -1,6 +1,7 @@
+use crate::user_service::domain::UserInfo;
 use crate::{user_service::domain::UserCreationInfo, Error};
 use async_trait::async_trait;
-use libsql::{params, Connection, Database};
+use libsql::{de, params, Connection, Database};
 use std::result;
 use std::sync::Arc;
 
@@ -98,6 +99,40 @@ impl UserRepository for Repository {
         if let Some(row) = rows.next().await? {
             let contrasena: String = row.get(0)?;
             Ok(contrasena)
+        } else {
+            Err(UserRepositoryError::UserNotFound)
+        }
+    }
+
+    async fn get_users(&self) -> Result<Vec<UserInfo>> {
+        let conn = self.get_connection().await?;
+        let mut rows = conn
+            .query(
+                "SELECT id_persona, nombre, correo, telefono, identificacion, nombre_tipo_identificacion, es_admin, fecha_ingreso FROM persona",
+                libsql::params![],
+            )
+            .await?;
+
+        let mut users = Vec::new();
+        while let Some(row) = rows.next().await? {
+            let user = de::from_row::<UserInfo>(&row)?;
+            users.push(user);
+        }
+
+        Ok(users)
+    }
+
+    async fn get_user_by_id(&self, user_id: &String) -> Result<UserInfo> {
+        let conn = self.get_connection().await?;
+        let mut rows = conn
+            .query(
+                "SELECT id_persona, nombre, correo, telefono, identificacion, nombre_tipo_identificacion, es_admin, fecha_ingreso FROM persona WHERE id_persona = ?1",
+                libsql::params![user_id.clone()],
+            )
+            .await?;
+
+        if let Some(row) = rows.next().await? {
+            Ok(de::from_row::<UserInfo>(&row)?)
         } else {
             Err(UserRepositoryError::UserNotFound)
         }

@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use axum::extract::Path;
 use axum::http::HeaderMap;
 use axum::middleware;
 use axum::routing::get;
@@ -11,6 +12,7 @@ use tracing::error;
 use crate::auth_middleware::auth_middleware;
 use crate::global_traits::HttpService;
 
+use super::domain::UserInfo;
 use super::repository::libsql_implementation::Repository;
 use super::token_provider::TokenProvider;
 use super::{domain::UserCreationInfo, repository::UserRepository, use_cases::UserService};
@@ -45,12 +47,16 @@ impl HttpService for UserHttpServer {
             self.user_repository.clone(),
             Some(email_unique_identifier),
         ));
+        let user_id_unique_identifier: Arc<dyn UniqueIdentifier> = Arc::new(PhoneIdentifier::new(
+            self.user_repository.clone(),
+            Some(phone_unique_identifier),
+        ));
 
         let token_provider = TokenProvider::new(self.token_key.clone());
 
         let user_service = UserService::new(
             self.user_repository.clone(),
-            phone_unique_identifier,
+            user_id_unique_identifier,
             token_provider,
         );
 
@@ -61,6 +67,8 @@ impl HttpService for UserHttpServer {
                 auth_middleware,
             ))
             .route("/user", post(create_user))
+            .route("/user/{identification}", get(get_user_by_identification))
+            .route("/user/all", get(get_all_users))
             .route("/log_in", post(login_user))
             .with_state(user_service)
     }
@@ -69,6 +77,50 @@ impl HttpService for UserHttpServer {
 async fn test_auth() -> &'static str {
     "Test for auth"
 }
+
+async fn get_all_users(
+    State(user_service): State<UserService>,
+) -> Result<Json<Vec<UserInfo>>, StatusCode> {
+    match user_service.get_users().await {
+        Ok(user_info) => Ok(Json(user_info)),
+        Err(err) => {
+            error!("Error fetching user by identification: {err}");
+            Err(StatusCode::INTERNAL_SERVER_ERROR)
+        }
+    }
+}
+
+async fn get_user_by_identification(
+    State(user_service): State<UserService>,
+    Path(identification): Path<String>,
+) -> Result<Json<UserInfo>, StatusCode> {
+    match user_service
+        .get_user_by_identification(identification)
+        .await
+    {
+        Ok(user_info) => Ok(Json(user_info)),
+        Err(err) => {
+            error!("Error fetching user by identification: {err}");
+            Err(StatusCode::INTERNAL_SERVER_ERROR)
+        }
+    }
+}
+
+// async fn get_user_by_identification(
+//     State(user_service): State<UserService>,
+//     Path(identification): Path<String>,
+// ) -> Result<Json<UserInfo>, StatusCode> {
+//     match user_service
+//         .get_user_by_identification(identification)
+//         .await
+//     {
+//         Ok(user_info) => Ok(Json(user_info)),
+//         Err(err) => {
+//             error!("Error fetching user by identification: {err}");
+//             Err(StatusCode::INTERNAL_SERVER_ERROR)
+//         }
+//     }
+// }
 
 async fn create_user(
     State(state): State<UserService>,

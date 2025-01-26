@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use bcrypt::{hash, verify, DEFAULT_COST};
 
-use super::domain::UserCreationInfo;
+use super::domain::{UserCreationInfo, UserInfo};
 use super::err::{Result, UserServiceError};
 use super::repository::UserRepository;
 use super::token_provider::TokenProvider;
@@ -63,5 +63,21 @@ impl UserService {
 
         let token = self.token_provider.generate_token(user_id)?;
         Ok(token)
+    }
+
+    pub async fn get_users(&self) -> Result<Vec<UserInfo>> {
+        Ok(self.user_repository.get_users().await?)
+    }
+
+    pub async fn get_user_by_identification(&self, identification: String) -> Result<UserInfo> {
+        let user_id = self
+            .unique_identifiers
+            .identify(identification.clone())
+            .await
+            .ok_or(UserServiceError::UserNotFoundError(format!(
+                "No user found for identification: {identification}"
+            )))?;
+
+        Ok(self.user_repository.get_user_by_id(&user_id).await?)
     }
 }

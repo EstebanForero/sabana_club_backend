@@ -112,6 +112,56 @@ impl UniqueIdentifier for EMailIdentifier {
     }
 }
 
+pub struct UserIdentifier {
+    user_repository: Arc<dyn UserRepository>,
+    next_identifier: Option<Arc<dyn UniqueIdentifier>>,
+}
+
+impl UserIdentifier {
+    pub fn new(
+        user_repository: Arc<dyn UserRepository>,
+        next_identifier: Option<Arc<dyn UniqueIdentifier>>,
+    ) -> Self {
+        UserIdentifier {
+            user_repository,
+            next_identifier,
+        }
+    }
+}
+
+#[async_trait]
+impl UniqueIdentifier for UserIdentifier {
+    async fn identify(&self, identification_token: String) -> Option<String> {
+        if !identification_token.is_empty() {
+            let user_id = self
+                .user_repository
+                .get_user_id_by_email(&identification_token)
+                .await;
+
+            match user_id {
+                Ok(user_id) => {
+                    return Some(user_id);
+                }
+                Err(err) => {
+                    error!(
+                        "Error getting user id with the user id <{identification_token}>, error: {err}"
+                    );
+                }
+            }
+        }
+
+        if let Some(next_identifier) = &self.next_identifier {
+            next_identifier.identify(identification_token).await
+        } else {
+            None
+        }
+    }
+
+    fn next(&self) -> Option<Arc<dyn UniqueIdentifier>> {
+        self.next_identifier.clone()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

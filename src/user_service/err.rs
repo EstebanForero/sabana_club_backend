@@ -17,4 +17,6 @@ pub enum UserServiceError {
     AuthenticationFailed(String),
     #[error("Token provider error: {0}")]
     TokenProviderError(#[from] TokenProviderError),
+    #[error("User not found: {0}")]
+    UserNotFoundError(String),
 }
