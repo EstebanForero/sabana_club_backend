@@ -3,6 +3,7 @@ use std::error::Error;
 use api_server::start_http_server;
 use global_traits::HttpService;
 use serde::Deserialize;
+use tournament_service::endpoints::TournamentHttpServer;
 use tracing::{error, info};
 use user_service::endpoints::UserHttpServer;
 
@@ -31,9 +32,10 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     let config: Config = envy::from_env()?;
 
-    let services: Vec<Box<dyn HttpService>> = vec![Box::new(
-        UserHttpServer::new(config.db_url, config.db_token, config.token_key).await,
-    )];
+    let services: Vec<Box<dyn HttpService>> = vec![
+        Box::new(UserHttpServer::new(&config.db_url, &config.db_token, config.token_key).await),
+        Box::new(TournamentHttpServer::new(&config.db_url, &config.db_token).await),
+    ];
 
     match start_http_server(config.port, services).await {
         Ok(_) => info!("Http server started succesfully"),

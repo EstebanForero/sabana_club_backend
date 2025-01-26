@@ -1,11 +1,14 @@
 use std::sync::Arc;
 
 use axum::http::HeaderMap;
+use axum::middleware;
+use axum::routing::get;
 use axum::{extract::State, http::StatusCode, routing::post, Json, Router};
 use axum_extra::extract::cookie::Cookie;
 use serde::{Deserialize, Serialize};
 use tracing::error;
 
+use crate::auth_middleware::auth_middleware;
 use crate::global_traits::HttpService;
 
 use super::repository::libsql_implementation::Repository;
@@ -22,8 +25,8 @@ pub struct UserHttpServer {
 }
 
 impl UserHttpServer {
-    pub async fn new(db_url: String, db_token: String, token_key: String) -> Self {
-        let user_repository = Repository::new(db_url, db_token)
+    pub async fn new(db_url: &str, db_token: &str, token_key: String) -> Self {
+        let user_repository = Repository::new(db_url.to_string(), db_token.to_string())
             .await
             .expect("Error creating the user repository");
 
@@ -52,10 +55,19 @@ impl HttpService for UserHttpServer {
         );
 
         Router::new()
+            .route("/test_auth", get(test_auth))
+            .layer(middleware::from_fn_with_state(
+                self.token_key.clone(),
+                auth_middleware,
+            ))
             .route("/user", post(create_user))
             .route("/log_in", post(login_user))
             .with_state(user_service)
     }
+}
+
+async fn test_auth() -> &'static str {
+    "Test for auth"
 }
 
 async fn create_user(
