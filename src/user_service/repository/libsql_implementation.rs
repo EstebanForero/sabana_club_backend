@@ -108,7 +108,7 @@ impl UserRepository for Repository {
         let conn = self.get_connection().await?;
         let mut rows = conn
             .query(
-                "SELECT id_persona, nombre, correo, telefono, identificacion, nombre_tipo_identificacion, es_admin, fecha_ingreso FROM persona",
+                "SELECT id_persona, nombre, correo, telefono, identificacion, nombre_tipo_identificacion, es_admin FROM persona",
                 libsql::params![],
             )
             .await?;
@@ -126,7 +126,7 @@ impl UserRepository for Repository {
         let conn = self.get_connection().await?;
         let mut rows = conn
             .query(
-                "SELECT id_persona, nombre, correo, telefono, identificacion, nombre_tipo_identificacion, es_admin, fecha_ingreso FROM persona WHERE id_persona = ?1",
+                "SELECT id_persona, nombre, correo, telefono, identificacion, nombre_tipo_identificacion, es_admin FROM persona WHERE id_persona = ?1",
                 libsql::params![user_id.clone()],
             )
             .await?;
