@@ -35,9 +35,9 @@ impl HttpService for TuitionHttpServer {
     fn get_router(&self) -> Router {
         Router::new()
             .route("/tuition", post(create_tuition))
-            .route("/tuition/user/:id_persona", get(get_tuitions_for_user))
+            .route("/tuition/user/{id_persona}", get(get_tuitions_for_user))
             .route(
-                "/tuition/user/:id_persona/recent",
+                "/tuition/user/{id_persona}/recent",
                 get(get_most_recent_tuition),
             )
             .with_state(self.tuition_service.clone())

@@ -6,6 +6,7 @@ use serde::Deserialize;
 use tournament_service::endpoints::TournamentHttpServer;
 use tracing::{error, info};
 use trainings_service::endpoints::TrainingHttpServer;
+use tuition_service::endpoints::TuitionHttpServer;
 use user_service::endpoints::UserHttpServer;
 
 mod api_server;
@@ -37,6 +38,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         Box::new(UserHttpServer::new(&config.db_url, &config.db_token, config.token_key).await),
         Box::new(TournamentHttpServer::new(&config.db_url, &config.db_token).await),
         Box::new(TrainingHttpServer::new(&config.db_url, &config.db_token).await),
+        Box::new(TuitionHttpServer::new(&config.db_url, &config.db_token).await),
     ];
 
     match start_http_server(config.port, services).await {

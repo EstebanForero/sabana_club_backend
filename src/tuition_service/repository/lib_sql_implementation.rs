@@ -37,7 +37,7 @@ impl TuitionRepository for TuitionRepositoryImpl {
     async fn create_tuition(&self, tuition: TuitionInfo) -> Result<()> {
         let conn = self.get_connection().await?;
         conn.execute(
-            "INSERT INTO new_matricula (id_persona, monto_usd) VALUES (?1, ?2)",
+            "INSERT INTO matricula (id_persona, monto_usd) VALUES (?1, ?2)",
             libsql::params![tuition.id_persona, tuition.monto_usd,],
         )
         .await
@@ -50,7 +50,7 @@ impl TuitionRepository for TuitionRepositoryImpl {
         let conn = self.get_connection().await?;
         let mut rows = conn
             .query(
-                "SELECT id_persona, monto_usd, fecha_inscripccion FROM new_matricula WHERE id_persona = ?1",
+                "SELECT id_persona, monto_usd, fecha_inscripccion FROM matricula WHERE id_persona = ?1",
                 libsql::params![id_persona.clone()],
             )
             .await
@@ -82,7 +82,7 @@ impl TuitionRepository for TuitionRepositoryImpl {
         let conn = self.get_connection().await?;
         let mut rows = conn
             .query(
-                "SELECT id_persona, monto_usd, fecha_inscripccion FROM new_matricula WHERE id_persona = ?1",
+                "SELECT id_persona, monto_usd, fecha_inscripccion FROM matricula WHERE id_persona = ?1",
                 libsql::params![id_persona.clone()],
             )
             .await
