@@ -3,7 +3,7 @@ use std::sync::Arc;
 use async_trait::async_trait;
 use chrono::NaiveDate;
 
-use crate::tuition_service::domain::Tuition;
+use crate::tuition_service::domain::{Tuition, TuitionInfo};
 
 use super::{
     err::{Result, TuitionRepositoryError},
@@ -34,15 +34,11 @@ impl TuitionRepositoryImpl {
 
 #[async_trait]
 impl TuitionRepository for TuitionRepositoryImpl {
-    async fn create_tuition(&self, tuition: Tuition) -> Result<()> {
+    async fn create_tuition(&self, tuition: TuitionInfo) -> Result<()> {
         let conn = self.get_connection().await?;
         conn.execute(
-            "INSERT INTO new_matricula (id_persona, monto_usd, fecha_inscripccion) VALUES (?1, ?2, ?3)",
-            libsql::params![
-                tuition.id_persona,
-                tuition.monto_usd,
-                tuition.fecha_inscripccion.to_string()
-            ],
+            "INSERT INTO new_matricula (id_persona, monto_usd) VALUES (?1, ?2)",
+            libsql::params![tuition.id_persona, tuition.monto_usd,],
         )
         .await
         .map_err(|e| TuitionRepositoryError::DatabaseError(e.to_string()))?;
@@ -55,7 +51,7 @@ impl TuitionRepository for TuitionRepositoryImpl {
         let mut rows = conn
             .query(
                 "SELECT id_persona, monto_usd, fecha_inscripccion FROM new_matricula WHERE id_persona = ?1",
-                libsql::params![id_persona],
+                libsql::params![id_persona.clone()],
             )
             .await
             .map_err(|e| TuitionRepositoryError::DatabaseError(e.to_string()))?;
@@ -87,32 +83,41 @@ impl TuitionRepository for TuitionRepositoryImpl {
         let mut rows = conn
             .query(
                 "SELECT id_persona, monto_usd, fecha_inscripccion FROM new_matricula WHERE id_persona = ?1",
-                libsql::params![id_persona],
+                libsql::params![id_persona.clone()],
             )
             .await
             .map_err(|e| TuitionRepositoryError::DatabaseError(e.to_string()))?;
 
-        if let Some(row) = rows
+        let mut tuitions = Vec::new();
+        while let Some(row) = rows
             .next()
             .await
             .map_err(|e| TuitionRepositoryError::DatabaseError(e.to_string()))?
         {
-            Ok(Tuition {
+            let fecha_inscripccion_str: String = row
+                .get(2)
+                .map_err(|e| TuitionRepositoryError::DatabaseError(e.to_string()))?;
+            let fecha_inscripccion = NaiveDate::parse_from_str(&fecha_inscripccion_str, "%Y-%m-%d")
+                .map_err(|e| {
+                    TuitionRepositoryError::DatabaseError(format!("Invalid date format: {}", e))
+                })?;
+
+            let tuition = Tuition {
                 id_persona: row
                     .get(0)
                     .map_err(|e| TuitionRepositoryError::DatabaseError(e.to_string()))?,
                 monto_usd: row
                     .get(1)
                     .map_err(|e| TuitionRepositoryError::DatabaseError(e.to_string()))?,
-                fecha_inscripccion: NaiveDate::parse_from_str(
-                    &row.get::<String>(2)
-                        .map_err(|e| TuitionRepositoryError::DatabaseError(e.to_string()))?,
-                    "%Y-%m-%d",
-                )
-                .map_err(|e| TuitionRepositoryError::DatabaseError(e.to_string()))?,
-            })
-        } else {
-            Err(TuitionRepositoryError::TuitionNotFound)
+                fecha_inscripccion: fecha_inscripccion.to_string(),
+            };
+            tuitions.push((fecha_inscripccion, tuition));
         }
+
+        tuitions
+            .into_iter()
+            .max_by_key(|(date, _)| *date)
+            .map(|(_, tuition)| tuition)
+            .ok_or(TuitionRepositoryError::TuitionNotFound)
     }
 }

@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use super::domain::TuitionInfo;
 use super::{domain::Tuition, repository::TuitionRepository};
 
 use super::err::Result;
@@ -15,23 +16,27 @@ impl TuitionService {
     }
 
     pub async fn create_tuition(&self, id_persona: String, monto_usd: f64) -> Result<()> {
-        let tuition = Tuition {
+        let tuition = TuitionInfo {
             id_persona,
             monto_usd,
-            fecha_inscripccion: chrono::Local::now().naive_local(),
         };
-        self.tuition_repository.create_tuition(tuition).await
+
+        self.tuition_repository.create_tuition(tuition).await?;
+
+        Ok(())
     }
 
     pub async fn get_tuitions_for_user(&self, id_persona: String) -> Result<Vec<Tuition>> {
-        self.tuition_repository
+        Ok(self
+            .tuition_repository
             .get_tuitions_for_user(&id_persona)
-            .await
+            .await?)
     }
 
     pub async fn get_most_recent_tuition(&self, id_persona: String) -> Result<Tuition> {
-        self.tuition_repository
+        Ok(self
+            .tuition_repository
             .get_most_recent_tuition(&id_persona)
-            .await
+            .await?)
     }
 }

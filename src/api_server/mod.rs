@@ -1,6 +1,7 @@
 use std::error::Error;
 
 use axum::Router;
+use tower_http::cors::CorsLayer;
 use tracing::info;
 
 use crate::global_traits::HttpService;
@@ -21,6 +22,10 @@ pub async fn start_http_server(
     let listener = tokio::net::TcpListener::bind(ip_addr).await?;
 
     info!("Listenig in the port: {port}");
+
+    let cors_layer = CorsLayer::permissive();
+
+    main_router = main_router.layer(cors_layer);
 
     axum::serve(listener, main_router).await?;
 
