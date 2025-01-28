@@ -34,6 +34,9 @@ impl UserService {
 
         let hashed_user_info = UserCreationInfo {
             contrasena: hashed_password,
+            nombre_tipo_identificacion: user_creation_info
+                .nombre_tipo_identificacion
+                .to_uppercase(),
             ..user_creation_info
         };
 
