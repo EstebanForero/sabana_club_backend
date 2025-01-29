@@ -17,10 +17,8 @@ pub fn build_unique_identifier(
         Some(phone_identifier),
     ));
 
-    let unique_identifier: Arc<dyn UniqueIdentifier> = Arc::new(UserIdentifier::new(
-        user_repository.clone(),
-        Some(email_identifier),
-    ));
+    let unique_identifier: Arc<dyn UniqueIdentifier> =
+        Arc::new(UserIdentifier::new(Some(email_identifier)));
 
     unique_identifier
 }
@@ -135,19 +133,12 @@ impl UniqueIdentifier for EMailIdentifier {
 }
 
 pub struct UserIdentifier {
-    user_repository: Arc<dyn UniqueIdentifierRepository>,
     next_identifier: Option<Arc<dyn UniqueIdentifier>>,
 }
 
 impl UserIdentifier {
-    pub fn new(
-        user_repository: Arc<dyn UniqueIdentifierRepository>,
-        next_identifier: Option<Arc<dyn UniqueIdentifier>>,
-    ) -> Self {
-        UserIdentifier {
-            user_repository,
-            next_identifier,
-        }
+    pub fn new(next_identifier: Option<Arc<dyn UniqueIdentifier>>) -> Self {
+        UserIdentifier { next_identifier }
     }
 }
 
