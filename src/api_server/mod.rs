@@ -29,7 +29,7 @@ pub async fn start_http_server(
     let cors_layer = CorsLayer::new()
         .allow_credentials(true)
         .allow_origin(
-            "https://sabana-club.vercel.app/login"
+            "https://sabana-club.vercel.app"
                 .parse::<HeaderValue>()
                 .unwrap(),
         )
