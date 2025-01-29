@@ -60,7 +60,10 @@ impl HttpService for TournamentHttpServer {
             .route("/tournament/register", post(register_user_in_tournament))
             .route("/tournament/all", get(get_all_tournaments))
             .route("/tournament/{identificator}", get(get_tournament_by_user))
-            .route("/tournament/users", post(get_users_in_tournament))
+            .route(
+                "/tournament/users/{id_tournament}",
+                post(get_users_in_tournament),
+            )
             .with_state(tournament_service)
     }
 }
@@ -138,7 +141,7 @@ async fn get_all_tournaments(
 
 async fn get_users_in_tournament(
     State(state): State<TournamentService>,
-    Json(id_torneo): Json<String>,
+    Path(id_torneo): Path<String>,
 ) -> Result<Json<Vec<UserTournamentRegistration>>, StatusCode> {
     match state.get_users_in_tournament(id_torneo).await {
         Ok(users) => Ok(Json(users)),

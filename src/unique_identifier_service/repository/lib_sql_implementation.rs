@@ -71,7 +71,7 @@ impl UniqueIdentifierRepository for LibSqlUniqueIdentifierRepo {
 
         let mut rows = conn
             .query(
-                "SELECT EXISTS (SELECT 1 FROM users WHERE id_persona = ?1)",
+                "SELECT EXISTS (SELECT 1 FROM persona WHERE id_persona = ?1)",
                 params![user_id],
             )
             .await?;
