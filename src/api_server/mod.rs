@@ -29,15 +29,17 @@ pub async fn start_http_server(
 
     info!("Listenig in the port: {port}");
 
-    let cors_layer = CorsLayer::new()
-        .allow_credentials(true)
-        .allow_headers([AUTHORIZATION, ACCEPT, CONTENT_TYPE])
-        .allow_origin(
-            "https://sabana-club.vercel.app"
-                .parse::<HeaderValue>()
-                .unwrap(),
-        )
-        .allow_methods([Method::GET, Method::POST]);
+    // let cors_layer = CorsLayer::new()
+    //     .allow_credentials(true)
+    //     .allow_headers([AUTHORIZATION, ACCEPT, CONTENT_TYPE])
+    //     .allow_origin(
+    //         "https://sabana-club.vercel.app"
+    //             .parse::<HeaderValue>()
+    //             .unwrap(),
+    //     )
+    //     .allow_methods([Method::GET, Method::POST]);
+    //
+    let cors_layer = CorsLayer::permissive();
 
     main_router = main_router.layer(cors_layer);
 
