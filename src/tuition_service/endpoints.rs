@@ -8,7 +8,7 @@ use axum::{
     http::StatusCode,
     middleware,
     routing::{get, post},
-    Router,
+    Extension, Router,
 };
 use std::sync::Arc;
 use tracing::error;
@@ -78,7 +78,7 @@ async fn create_tuition(
 
 async fn get_tuitions_for_user_with_extension(
     State(state): State<TuitionService>,
-    Path(user_id): Path<String>,
+    Extension(user_id): Extension<String>,
 ) -> Result<Json<Vec<Tuition>>, StatusCode> {
     match state.get_tuitions_for_user(user_id).await {
         Ok(tuitions) => Ok(Json(tuitions)),
