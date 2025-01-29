@@ -157,7 +157,8 @@ pub async fn login_user(
         Ok(token) => {
             let cookie = Cookie::build(("auth_token", token))
                 .http_only(true)
-                .secure(true);
+                // Change later, in production, to true
+                .secure(false);
 
             let jar = jar.add(cookie);
             Ok((HeaderMap::new(), jar))
