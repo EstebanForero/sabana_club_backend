@@ -3,7 +3,9 @@ use std::sync::Arc;
 
 use async_trait::async_trait;
 
-use crate::tournament_service::domain::{Tournament, UserTournamentRegistration};
+use crate::tournament_service::domain::{
+    Tournament, UserTournamentInfo, UserTournamentRegistration,
+};
 
 use super::{err::TournamentRepositoryError, TournamentRepository};
 
@@ -13,13 +15,16 @@ pub struct TournamentRepositoryImpl {
 }
 
 impl TournamentRepositoryImpl {
-    pub async fn new(url: String, token: String) -> std::result::Result<Self, String> {
-        let db = libsql::Builder::new_remote(url, token)
+    pub async fn new(
+        url: &str,
+        token: &str,
+    ) -> std::result::Result<Arc<dyn TournamentRepository>, String> {
+        let db = libsql::Builder::new_remote(url.to_string(), token.to_string())
             .build()
             .await
             .map_err(|err| format!("Error creating new remote database for libsql: {err}"))?;
 
-        Ok(Self { db: Arc::new(db) })
+        Ok(Arc::new(Self { db: Arc::new(db) }))
     }
 
     async fn get_connection(&self) -> Result<libsql::Connection> {
@@ -90,7 +95,7 @@ impl TournamentRepository for TournamentRepositoryImpl {
 
     async fn get_users_in_tournament(
         &self,
-        id_torneo: &String,
+        id_torneo: &str,
     ) -> Result<Vec<UserTournamentRegistration>> {
         let conn = self.get_connection().await?;
         let mut rows = conn
@@ -121,5 +126,44 @@ impl TournamentRepository for TournamentRepositoryImpl {
         }
 
         Ok(registrations)
+    }
+
+    async fn get_tournaments_info_for_user(
+        &self,
+        user_id: &str,
+    ) -> Result<Vec<UserTournamentInfo>> {
+        let conn = self.get_connection().await?;
+
+        let mut rows = conn
+            .query(
+                "SELECT torneo.id_torneo, torneo.nombre, persona_torneo.puesto
+                 FROM torneo
+                 INNER JOIN persona_torneo ON torneo.id_torneo = persona_torneo.id_torneo
+                 WHERE persona_torneo.id_persona = ?1",
+                libsql::params![user_id],
+            )
+            .await
+            .map_err(|e| TournamentRepositoryError::DatabaseError(e.to_string()))?;
+
+        let mut tournaments = Vec::new();
+        while let Some(row) = rows
+            .next()
+            .await
+            .map_err(|e| TournamentRepositoryError::DatabaseError(e.to_string()))?
+        {
+            tournaments.push(UserTournamentInfo {
+                id_torneo: row
+                    .get(0)
+                    .map_err(|e| TournamentRepositoryError::DatabaseError(e.to_string()))?,
+                nombre: row
+                    .get(1)
+                    .map_err(|e| TournamentRepositoryError::DatabaseError(e.to_string()))?,
+                puesto: row
+                    .get(2)
+                    .map_err(|e| TournamentRepositoryError::DatabaseError(e.to_string()))?,
+            });
+        }
+
+        Ok(tournaments)
     }
 }

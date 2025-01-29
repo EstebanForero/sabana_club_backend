@@ -1,8 +1,12 @@
-use crate::global_traits::HttpService;
+use crate::{
+    auth_middleware::auth_middleware, global_traits::HttpService,
+    unique_identifier_service::usecases::UniqueIdentifier,
+};
 use async_trait::async_trait;
 use axum::{
     extract::{Json, Path, State},
     http::StatusCode,
+    middleware,
     routing::{get, post},
     Router,
 };
@@ -11,22 +15,26 @@ use tracing::error;
 
 use super::{
     domain::{Tuition, TuitionInfo},
-    repository::lib_sql_implementation::TuitionRepositoryImpl,
+    repository::TuitionRepository,
     use_cases::TuitionService,
 };
 
 pub struct TuitionHttpServer {
     tuition_service: TuitionService,
+    token_key: String,
 }
 
 impl TuitionHttpServer {
-    pub async fn new(db_url: &str, db_token: &str) -> Self {
-        let tuition_repository =
-            TuitionRepositoryImpl::new(db_url.to_string(), db_token.to_string())
-                .await
-                .expect("Failed to initialize TuitionRepository");
-        let tuition_service = TuitionService::new(Arc::new(tuition_repository));
-        Self { tuition_service }
+    pub async fn new(
+        tuition_repository: Arc<dyn TuitionRepository>,
+        unique_identifier: Arc<dyn UniqueIdentifier>,
+        token_key: &str,
+    ) -> Self {
+        let tuition_service = TuitionService::new(tuition_repository, unique_identifier.clone());
+        Self {
+            tuition_service,
+            token_key: token_key.to_string(),
+        }
     }
 }
 
@@ -34,8 +42,16 @@ impl TuitionHttpServer {
 impl HttpService for TuitionHttpServer {
     fn get_router(&self) -> Router {
         Router::new()
+            .route("/tuition", get(get_tuitions_for_user_with_extension))
+            .layer(middleware::from_fn_with_state(
+                self.token_key.clone(),
+                auth_middleware,
+            ))
             .route("/tuition", post(create_tuition))
-            .route("/tuition/user/{id_persona}", get(get_tuitions_for_user))
+            .route(
+                "/tuition/user/{user_identifier}",
+                get(get_tuitions_for_user),
+            )
             .route(
                 "/tuition/user/{id_persona}/recent",
                 get(get_most_recent_tuition),
@@ -60,11 +76,24 @@ async fn create_tuition(
     }
 }
 
+async fn get_tuitions_for_user_with_extension(
+    State(state): State<TuitionService>,
+    Path(user_id): Path<String>,
+) -> Result<Json<Vec<Tuition>>, StatusCode> {
+    match state.get_tuitions_for_user(user_id).await {
+        Ok(tuitions) => Ok(Json(tuitions)),
+        Err(err) => {
+            error!("Error fetching tuitions for user: {err}");
+            Err(StatusCode::INTERNAL_SERVER_ERROR)
+        }
+    }
+}
+
 async fn get_tuitions_for_user(
     State(state): State<TuitionService>,
-    Path(id_persona): Path<String>,
+    Path(user_identifier): Path<String>,
 ) -> Result<Json<Vec<Tuition>>, StatusCode> {
-    match state.get_tuitions_for_user(id_persona).await {
+    match state.get_tuitions_for_user(user_identifier).await {
         Ok(tuitions) => Ok(Json(tuitions)),
         Err(err) => {
             error!("Error fetching tuitions for user: {err}");

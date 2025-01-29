@@ -2,19 +2,26 @@ use std::sync::Arc;
 
 use uuid::Uuid;
 
-use super::domain::UserTournamentRegistration;
+use crate::unique_identifier_service::usecases::UniqueIdentifier;
+
+use super::domain::{UserTournamentInfo, UserTournamentRegistration};
 use super::err::Result;
 use super::{domain::Tournament, repository::TournamentRepository};
 
 #[derive(Clone)]
 pub struct TournamentService {
     tournament_repository: Arc<dyn TournamentRepository>,
+    unique_identifier: Arc<dyn UniqueIdentifier>,
 }
 
 impl TournamentService {
-    pub fn new(tournament_repository: Arc<dyn TournamentRepository>) -> Self {
+    pub fn new(
+        tournament_repository: Arc<dyn TournamentRepository>,
+        unique_identifier: Arc<dyn UniqueIdentifier>,
+    ) -> Self {
         Self {
             tournament_repository,
+            unique_identifier,
         }
     }
 
@@ -30,6 +37,29 @@ impl TournamentService {
             .await?;
 
         Ok(())
+    }
+
+    pub async fn get_tournaments_by_identificator(
+        &self,
+        identificator: String,
+    ) -> Result<Vec<UserTournamentInfo>> {
+        let user_id = self.unique_identifier.identify(identificator.clone()).await;
+
+        let user_id = match user_id {
+            Some(user_id) => user_id,
+            None => {
+                return Err(super::err::TournamentServiceError::UserNotIdentifiable(
+                    identificator,
+                ))
+            }
+        };
+
+        let user_tournaments_info = self
+            .tournament_repository
+            .get_tournaments_info_for_user(&user_id)
+            .await?;
+
+        Ok(user_tournaments_info)
     }
 
     pub async fn register_user_in_tournament(

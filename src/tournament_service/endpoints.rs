@@ -1,46 +1,65 @@
 use axum::{
     extract::{Json, Path, State},
     http::StatusCode,
+    middleware,
     routing::{get, post},
-    Router,
+    Extension, Router,
 };
 use tracing::error;
 
 use std::sync::Arc;
 
-use crate::global_traits::HttpService;
+use crate::{
+    auth_middleware::auth_middleware, global_traits::HttpService,
+    unique_identifier_service::usecases::UniqueIdentifier,
+};
 
 use super::{
-    domain::{Tournament, UserTournamentRegistration},
-    repository::{lib_sql_implementation::TournamentRepositoryImpl, TournamentRepository},
+    domain::{Tournament, UserTournamentInfo, UserTournamentRegistration},
+    repository::TournamentRepository,
     use_cases::TournamentService,
 };
 
 pub struct TournamentHttpServer {
     tournament_repository: Arc<dyn TournamentRepository>,
+    unique_identifier: Arc<dyn UniqueIdentifier>,
+    token_key: String,
 }
 
 impl TournamentHttpServer {
-    pub async fn new(db_url: &str, db_token: &str) -> Self {
-        let tournament_repository =
-            TournamentRepositoryImpl::new(db_url.to_string(), db_token.to_string())
-                .await
-                .expect("Failed to connect to database");
-
+    pub async fn new(
+        tournament_repository: Arc<dyn TournamentRepository>,
+        unique_identifier: Arc<dyn UniqueIdentifier>,
+        token_key: &str,
+    ) -> Self {
         Self {
-            tournament_repository: Arc::new(tournament_repository),
+            tournament_repository,
+            unique_identifier,
+            token_key: token_key.to_string(),
         }
     }
 }
 
 impl HttpService for TournamentHttpServer {
     fn get_router(&self) -> axum::Router {
-        let tournament_service = TournamentService::new(self.tournament_repository.clone());
+        let tournament_service = TournamentService::new(
+            self.tournament_repository.clone(),
+            self.unique_identifier.clone(),
+        );
 
         Router::new()
-            .route("/tournament/{tournament_name}", post(create_tournament))
+            .route("/tournament", get(get_tournament_by_user_with_extension))
+            .layer(middleware::from_fn_with_state(
+                self.token_key.clone(),
+                auth_middleware,
+            ))
+            .route(
+                "/tournament/name/{tournament_name}",
+                post(create_tournament),
+            )
             .route("/tournament/register", post(register_user_in_tournament))
             .route("/tournament/all", get(get_all_tournaments))
+            .route("/tournament/{identificator}", get(get_tournament_by_user))
             .route("/tournament/users", post(get_users_in_tournament))
             .with_state(tournament_service)
     }
@@ -56,6 +75,32 @@ async fn create_tournament(
             error!("Error creating tournament: {err}");
             StatusCode::INTERNAL_SERVER_ERROR
         }
+    }
+}
+
+async fn get_tournament_by_user_with_extension(
+    State(state): State<TournamentService>,
+    Extension(user_id): Extension<String>,
+) -> Result<Json<Vec<UserTournamentInfo>>, StatusCode> {
+    match state.get_tournaments_by_identificator(user_id).await {
+        Err(err) => {
+            error!("Error getting tournament by user: {err}");
+            Err(StatusCode::INTERNAL_SERVER_ERROR)
+        }
+        Ok(user_tournaments_info) => Ok(Json(user_tournaments_info)),
+    }
+}
+
+async fn get_tournament_by_user(
+    State(state): State<TournamentService>,
+    Path(identificator): Path<String>,
+) -> Result<Json<Vec<UserTournamentInfo>>, StatusCode> {
+    match state.get_tournaments_by_identificator(identificator).await {
+        Err(err) => {
+            error!("Error getting tournament by user: {err}");
+            Err(StatusCode::INTERNAL_SERVER_ERROR)
+        }
+        Ok(user_tournaments_info) => Ok(Json(user_tournaments_info)),
     }
 }
 

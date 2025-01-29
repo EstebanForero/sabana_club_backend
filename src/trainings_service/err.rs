@@ -6,4 +6,6 @@ pub type Result<T> = std::result::Result<T, TrainingServiceError>;
 pub enum TrainingServiceError {
     #[error("Training repository error: {0}")]
     TrainingRepositoryError(#[from] TrainingRepositoryError),
+    #[error("Could not identify user with identificator: {0}")]
+    UserNotIdentifiable(String),
 }

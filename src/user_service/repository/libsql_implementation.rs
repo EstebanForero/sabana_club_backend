@@ -1,5 +1,5 @@
+use crate::user_service::domain::UserCreationInfo;
 use crate::user_service::domain::UserInfo;
-use crate::{user_service::domain::UserCreationInfo, Error};
 use async_trait::async_trait;
 use libsql::{de, params, Connection, Database};
 use std::result;
@@ -9,18 +9,18 @@ use super::err::{Result, UserRepositoryError};
 use super::UserRepository;
 
 #[derive(Clone)]
-pub struct Repository {
+pub struct LibSqlUserRepository {
     db: Arc<Database>,
 }
 
-impl Repository {
-    pub async fn new(url: String, token: String) -> result::Result<Self, String> {
-        let db = libsql::Builder::new_remote(url, token)
+impl LibSqlUserRepository {
+    pub async fn new(url: &str, token: &str) -> result::Result<Arc<dyn UserRepository>, String> {
+        let db = libsql::Builder::new_remote(url.to_string(), token.to_string())
             .build()
             .await
             .map_err(|err| format!("Error creating new remote database for libsql: {err}"))?;
 
-        Ok(Self { db: Arc::new(db) })
+        Ok(Arc::new(Self { db: Arc::new(db) }))
     }
 
     async fn get_connection(&self) -> Result<Connection> {
@@ -29,7 +29,7 @@ impl Repository {
 }
 
 #[async_trait]
-impl UserRepository for Repository {
+impl UserRepository for LibSqlUserRepository {
     async fn create_user(&self, user_creation_info: UserCreationInfo) -> Result<()> {
         let conn = self.get_connection().await?;
         conn.execute(
@@ -51,40 +51,6 @@ impl UserRepository for Repository {
         .await?;
 
         Ok(())
-    }
-
-    async fn get_user_id_by_email(&self, email: &String) -> Result<String> {
-        let conn = self.get_connection().await?;
-        let mut rows = conn
-            .query(
-                "SELECT id_persona FROM persona WHERE correo = ?1 LIMIT 1",
-                params![email.to_string()],
-            )
-            .await?;
-
-        if let Some(row) = rows.next().await? {
-            let id_persona: String = row.get(0)?;
-            Ok(id_persona)
-        } else {
-            Err(UserRepositoryError::UserNotFound)
-        }
-    }
-
-    async fn get_user_id_by_phone_number(&self, phone_number: &String) -> Result<String> {
-        let conn = self.get_connection().await?;
-        let mut rows = conn
-            .query(
-                "SELECT id_persona FROM persona WHERE telefono = ?1 LIMIT 1",
-                params![phone_number.to_string()],
-            )
-            .await?;
-
-        if let Some(row) = rows.next().await? {
-            let id_persona: String = row.get(0)?;
-            Ok(id_persona)
-        } else {
-            Err(UserRepositoryError::UserNotFound)
-        }
     }
 
     async fn get_user_password(&self, user_id: &String) -> Result<String> {

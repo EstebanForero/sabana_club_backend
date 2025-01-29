@@ -2,7 +2,9 @@ use std::sync::Arc;
 
 use uuid::Uuid;
 
-use super::err::Result;
+use crate::unique_identifier_service::usecases::UniqueIdentifier;
+
+use super::err::{Result, TrainingServiceError};
 
 use super::model::{Training, TrainingRegistration};
 use super::repository::TrainingRepository;
@@ -10,13 +12,44 @@ use super::repository::TrainingRepository;
 #[derive(Clone)]
 pub struct TrainingService {
     training_repository: Arc<dyn TrainingRepository>,
+    unique_identifier: Arc<dyn UniqueIdentifier>,
 }
 
 impl TrainingService {
-    pub fn new(training_repository: Arc<dyn TrainingRepository>) -> Self {
+    pub fn new(
+        training_repository: Arc<dyn TrainingRepository>,
+        unique_identifier: Arc<dyn UniqueIdentifier>,
+    ) -> Self {
         Self {
             training_repository,
+            unique_identifier,
         }
+    }
+
+    pub async fn get_trainings_for_user(
+        &self,
+        user_identification: String,
+    ) -> Result<Vec<Training>> {
+        let user_id = self
+            .unique_identifier
+            .identify(user_identification.clone())
+            .await;
+
+        let user_id = match user_id {
+            Some(user_id) => user_id,
+            None => {
+                return Err(TrainingServiceError::UserNotIdentifiable(
+                    user_identification,
+                ))
+            }
+        };
+
+        let user_trainings = self
+            .training_repository
+            .get_trainings_for_user(&user_id)
+            .await?;
+
+        Ok(user_trainings)
     }
 
     pub async fn create_training(

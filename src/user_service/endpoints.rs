@@ -11,54 +11,42 @@ use tracing::error;
 
 use crate::auth_middleware::auth_middleware;
 use crate::global_traits::HttpService;
+use crate::unique_identifier_service::usecases::UniqueIdentifier;
 
 use super::domain::UserInfo;
-use super::repository::libsql_implementation::Repository;
+use super::repository::UserRepository;
 use super::token_provider::TokenProvider;
-use super::{domain::UserCreationInfo, repository::UserRepository, use_cases::UserService};
-
-use super::unique_identifier::{
-    EMailIdentifier, PhoneIdentifier, UniqueIdentifier, UserIdentifier,
-};
+use super::{domain::UserCreationInfo, use_cases::UserService};
 
 use axum_extra::extract::CookieJar;
 
 pub struct UserHttpServer {
     user_repository: Arc<dyn UserRepository>,
     token_key: String,
+    unique_identifier: Arc<dyn UniqueIdentifier>,
 }
 
 impl UserHttpServer {
-    pub async fn new(db_url: &str, db_token: &str, token_key: String) -> Self {
-        let user_repository = Repository::new(db_url.to_string(), db_token.to_string())
-            .await
-            .expect("Error creating the user repository");
-
+    pub async fn new(
+        token_key: String,
+        unique_identifier: Arc<dyn UniqueIdentifier>,
+        user_repository: Arc<dyn UserRepository>,
+    ) -> Self {
         Self {
-            user_repository: Arc::new(user_repository),
+            user_repository,
             token_key,
+            unique_identifier,
         }
     }
 }
 
 impl HttpService for UserHttpServer {
     fn get_router(&self) -> axum::Router {
-        let email_unique_identifier: Arc<dyn UniqueIdentifier> =
-            Arc::new(EMailIdentifier::new(self.user_repository.clone(), None));
-        let phone_unique_identifier: Arc<dyn UniqueIdentifier> = Arc::new(PhoneIdentifier::new(
-            self.user_repository.clone(),
-            Some(email_unique_identifier),
-        ));
-        let user_id_unique_identifier: Arc<dyn UniqueIdentifier> = Arc::new(UserIdentifier::new(
-            self.user_repository.clone(),
-            Some(phone_unique_identifier),
-        ));
-
         let token_provider = TokenProvider::new(self.token_key.clone());
 
         let user_service = UserService::new(
             self.user_repository.clone(),
-            user_id_unique_identifier,
+            self.unique_identifier.clone(),
             token_provider,
         );
 

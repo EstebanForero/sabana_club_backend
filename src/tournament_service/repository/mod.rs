@@ -1,5 +1,5 @@
 pub mod err;
-use super::domain::{Tournament, UserTournamentRegistration};
+use super::domain::{Tournament, UserTournamentInfo, UserTournamentRegistration};
 use async_trait::async_trait;
 use err::Result;
 use mockall::automock;
@@ -19,6 +19,9 @@ pub trait TournamentRepository: Send + Sync {
 
     async fn get_users_in_tournament(
         &self,
-        id_torneo: &String,
+        id_torneo: &str,
     ) -> Result<Vec<UserTournamentRegistration>>;
+
+    async fn get_tournaments_info_for_user(&self, user_id: &str)
+        -> Result<Vec<UserTournamentInfo>>;
 }

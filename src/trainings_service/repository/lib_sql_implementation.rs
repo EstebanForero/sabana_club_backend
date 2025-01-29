@@ -12,13 +12,13 @@ pub struct TrainingRepositoryImpl {
 }
 
 impl TrainingRepositoryImpl {
-    pub async fn new(db_url: String, db_token: String) -> Result<Self> {
-        let db = libsql::Builder::new_remote(db_url, db_token)
+    pub async fn new(db_url: &str, db_token: &str) -> Result<Arc<dyn TrainingRepository>> {
+        let db = libsql::Builder::new_remote(db_url.to_string(), db_token.to_string())
             .build()
             .await
             .map_err(|e| TrainingRepositoryError::DatabaseError(e.to_string()))?;
 
-        Ok(Self { db: Arc::new(db) })
+        Ok(Arc::new(Self { db: Arc::new(db) }))
     }
 
     async fn get_connection(&self) -> Result<libsql::Connection> {
@@ -88,13 +88,13 @@ impl TrainingRepository for TrainingRepositoryImpl {
 
     async fn get_users_in_training(
         &self,
-        id_entrenamiento: &String,
+        id_entrenamiento: &str,
     ) -> Result<Vec<TrainingRegistration>> {
         let conn = self.get_connection().await?;
         let mut rows = conn
             .query(
                 "SELECT id_entrenamiento, id_persona FROM entrenamiento_persona WHERE id_entrenamiento = ?1",
-                libsql::params![id_entrenamiento.clone()],
+                libsql::params![id_entrenamiento],
             )
             .await
             .map_err(|e| TrainingRepositoryError::DatabaseError(e.to_string()))?;
@@ -116,5 +116,41 @@ impl TrainingRepository for TrainingRepositoryImpl {
         }
 
         Ok(registrations)
+    }
+
+    async fn get_trainings_for_user(&self, user_id: &str) -> Result<Vec<Training>> {
+        let conn = self.get_connection().await?;
+
+        let mut rows = conn
+            .query(
+                "SELECT entrenamiento.id_entrenamiento, entrenamiento.nombre_entrenamiento, entrenamiento.tiempo_minutos
+                 FROM entrenamiento
+                 INNER JOIN entrenamiento_persona ON entrenamiento.id_entrenamiento = entrenamiento_persona.id_entrenamiento
+                 WHERE entrenamiento_persona.id_persona = ?1",
+                libsql::params![user_id],
+            )
+            .await
+            .map_err(|e| TrainingRepositoryError::DatabaseError(e.to_string()))?;
+
+        let mut trainings = Vec::new();
+        while let Some(row) = rows
+            .next()
+            .await
+            .map_err(|e| TrainingRepositoryError::DatabaseError(e.to_string()))?
+        {
+            trainings.push(Training {
+                id_entrenamiento: row
+                    .get(0)
+                    .map_err(|e| TrainingRepositoryError::DatabaseError(e.to_string()))?,
+                nombre_entrenamiento: row
+                    .get(1)
+                    .map_err(|e| TrainingRepositoryError::DatabaseError(e.to_string()))?,
+                tiempo_minutos: row
+                    .get(2)
+                    .map_err(|e| TrainingRepositoryError::DatabaseError(e.to_string()))?,
+            });
+        }
+
+        Ok(trainings)
     }
 }

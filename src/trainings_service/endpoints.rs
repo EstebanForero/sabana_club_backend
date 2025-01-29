@@ -4,33 +4,39 @@ use async_trait::async_trait;
 use axum::{
     extract::{Path, State},
     http::StatusCode,
+    middleware,
     routing::{get, post},
-    Json, Router,
+    Extension, Json, Router,
 };
 use serde::{Deserialize, Serialize};
 use tracing::error;
 
-use crate::global_traits::HttpService;
+use crate::{
+    auth_middleware::auth_middleware, global_traits::HttpService,
+    unique_identifier_service::usecases::UniqueIdentifier,
+};
 
 use super::{
     model::{Training, TrainingRegistration},
-    repository::lib_sql_implementation::TrainingRepositoryImpl,
+    repository::TrainingRepository,
     use_cases::TrainingService,
 };
 
 pub struct TrainingHttpServer {
     training_service: Arc<TrainingService>,
+    token_key: String,
 }
 
 impl TrainingHttpServer {
-    pub async fn new(db_url: &str, db_token: &str) -> Self {
-        let training_repository =
-            TrainingRepositoryImpl::new(db_url.to_string(), db_token.to_string())
-                .await
-                .expect("Failed to initialize TrainingRepository");
-        let training_service = TrainingService::new(Arc::new(training_repository));
+    pub async fn new(
+        training_repository: Arc<dyn TrainingRepository>,
+        unique_identifier: Arc<dyn UniqueIdentifier>,
+        token_key: &str,
+    ) -> Self {
+        let training_service = TrainingService::new(training_repository, unique_identifier.clone());
         Self {
             training_service: Arc::new(training_service),
+            token_key: token_key.to_string(),
         }
     }
 }
@@ -39,6 +45,11 @@ impl TrainingHttpServer {
 impl HttpService for TrainingHttpServer {
     fn get_router(&self) -> Router {
         Router::new()
+            .route("/training", get(get_trainings_for_user_with_extension))
+            .layer(middleware::from_fn_with_state(
+                self.token_key.clone(),
+                auth_middleware,
+            ))
             .route("/training", post(create_training))
             .route("/training/register", post(register_user_in_training))
             .route("/training/all", get(get_all_trainings))
@@ -46,6 +57,7 @@ impl HttpService for TrainingHttpServer {
                 "/training/users/{id_entrenamiento}",
                 get(get_users_in_training),
             )
+            .route("/training/{user_identifier}", get(get_trainings_for_user))
             .with_state(self.training_service.clone())
     }
 }
@@ -54,6 +66,32 @@ impl HttpService for TrainingHttpServer {
 struct TrainingInfo {
     nombre_entrenamiento: String,
     tiempo_minutos: i32,
+}
+
+async fn get_trainings_for_user_with_extension(
+    State(state): State<Arc<TrainingService>>,
+    Extension(user_id): Extension<String>,
+) -> Result<Json<Vec<Training>>, StatusCode> {
+    match state.get_trainings_for_user(user_id).await {
+        Err(err) => {
+            error!("Error getting trainings for user: {err}");
+            Err(StatusCode::INTERNAL_SERVER_ERROR)
+        }
+        Ok(user_trainings) => Ok(Json(user_trainings)),
+    }
+}
+
+async fn get_trainings_for_user(
+    State(state): State<Arc<TrainingService>>,
+    Path(user_identification): Path<String>,
+) -> Result<Json<Vec<Training>>, StatusCode> {
+    match state.get_trainings_for_user(user_identification).await {
+        Err(err) => {
+            error!("Error getting trainings for user: {err}");
+            Err(StatusCode::INTERNAL_SERVER_ERROR)
+        }
+        Ok(user_trainings) => Ok(Json(user_trainings)),
+    }
 }
 
 async fn create_training(

@@ -2,11 +2,12 @@ use std::sync::Arc;
 
 use bcrypt::{hash, verify, DEFAULT_COST};
 
+use crate::unique_identifier_service::usecases::UniqueIdentifier;
+
 use super::domain::{UserCreationInfo, UserInfo};
 use super::err::{Result, UserServiceError};
 use super::repository::UserRepository;
 use super::token_provider::TokenProvider;
-use super::unique_identifier::UniqueIdentifier;
 
 #[derive(Clone)]
 pub struct UserService {

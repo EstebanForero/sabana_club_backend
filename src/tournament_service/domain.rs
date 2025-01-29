@@ -12,3 +12,10 @@ pub struct UserTournamentRegistration {
     pub id_torneo: String,
     pub puesto: i32,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct UserTournamentInfo {
+    pub id_torneo: String,
+    pub nombre: String,
+    pub puesto: i32,
+}

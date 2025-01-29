@@ -3,7 +3,26 @@ use std::sync::Arc;
 use async_trait::async_trait;
 use tracing::{error, info};
 
-use super::repository::UserRepository;
+use super::repository::UniqueIdentifierRepository;
+
+pub fn build_unique_identifier(
+    user_repository: Arc<dyn UniqueIdentifierRepository>,
+) -> Arc<dyn UniqueIdentifier> {
+    let phone_identifier: Arc<dyn UniqueIdentifier> =
+        Arc::new(PhoneIdentifier::new(user_repository.clone(), None));
+
+    let email_identifier: Arc<dyn UniqueIdentifier> = Arc::new(EMailIdentifier::new(
+        user_repository.clone(),
+        Some(phone_identifier),
+    ));
+
+    let unique_identifier: Arc<dyn UniqueIdentifier> = Arc::new(UserIdentifier::new(
+        user_repository.clone(),
+        Some(email_identifier),
+    ));
+
+    unique_identifier
+}
 
 #[async_trait]
 pub trait UniqueIdentifier: Sync + Send {
@@ -13,13 +32,13 @@ pub trait UniqueIdentifier: Sync + Send {
 }
 
 pub struct PhoneIdentifier {
-    user_repository: Arc<dyn UserRepository>,
+    user_repository: Arc<dyn UniqueIdentifierRepository>,
     next_identifier: Option<Arc<dyn UniqueIdentifier>>,
 }
 
 impl PhoneIdentifier {
     pub fn new(
-        user_repository: Arc<dyn UserRepository>,
+        user_repository: Arc<dyn UniqueIdentifierRepository>,
         next_identifier: Option<Arc<dyn UniqueIdentifier>>,
     ) -> Self {
         PhoneIdentifier {
@@ -64,13 +83,13 @@ impl UniqueIdentifier for PhoneIdentifier {
 }
 
 pub struct EMailIdentifier {
-    user_repository: Arc<dyn UserRepository>,
+    user_repository: Arc<dyn UniqueIdentifierRepository>,
     next_identifier: Option<Arc<dyn UniqueIdentifier>>,
 }
 
 impl EMailIdentifier {
     pub fn new(
-        user_repository: Arc<dyn UserRepository>,
+        user_repository: Arc<dyn UniqueIdentifierRepository>,
         next_identifier: Option<Arc<dyn UniqueIdentifier>>,
     ) -> Self {
         EMailIdentifier {
@@ -115,13 +134,13 @@ impl UniqueIdentifier for EMailIdentifier {
 }
 
 pub struct UserIdentifier {
-    user_repository: Arc<dyn UserRepository>,
+    user_repository: Arc<dyn UniqueIdentifierRepository>,
     next_identifier: Option<Arc<dyn UniqueIdentifier>>,
 }
 
 impl UserIdentifier {
     pub fn new(
-        user_repository: Arc<dyn UserRepository>,
+        user_repository: Arc<dyn UniqueIdentifierRepository>,
         next_identifier: Option<Arc<dyn UniqueIdentifier>>,
     ) -> Self {
         UserIdentifier {
@@ -136,15 +155,14 @@ impl UniqueIdentifier for UserIdentifier {
     async fn identify(&self, identification_token: String) -> Option<String> {
         info!("Executing unique identifier");
         if !identification_token.is_empty() {
-            let user = self
+            let result = self
                 .user_repository
-                .get_user_by_id(&identification_token)
+                .comprove_id_existance(&identification_token)
                 .await;
 
-            match user {
-                Ok(user) => {
-                    info!("Returning user id: {}", user.id_persona);
-                    return Some(user.id_persona);
+            match result {
+                Ok(_) => {
+                    return Some(identification_token);
                 }
                 Err(err) => {
                     error!(
@@ -168,15 +186,16 @@ impl UniqueIdentifier for UserIdentifier {
 
 #[cfg(test)]
 mod tests {
+    use crate::unique_identifier_service::repository::MockUniqueIdentifierRepository;
+
     use super::*;
-    use crate::user_service::repository::MockUserRepository;
     use mockall::predicate::eq;
     use std::sync::Arc;
     use tokio;
 
     #[tokio::test]
     async fn test_phone_identifier_found() {
-        let mut mock_repo = MockUserRepository::new();
+        let mut mock_repo = MockUniqueIdentifierRepository::new();
 
         // Arrange: Set up the mock to return "user-id-123" when
         // get_user_id_by_phone_number is called with "9999999999"
@@ -197,7 +216,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_email_identifier_found() {
-        let mut mock_repo = MockUserRepository::new();
+        let mut mock_repo = MockUniqueIdentifierRepository::new();
 
         // Arrange: Set up the mock to return "user-id-456" when
         // get_user_id_by_email is called with "test@example.com"
@@ -222,7 +241,7 @@ mod tests {
     async fn test_phone_identifier_invalid_number() {
         // We can use a mock repo with no expectations for invalid input,
         // as we expect the function to simply return None early.
-        let mock_repo = MockUserRepository::new();
+        let mock_repo = MockUniqueIdentifierRepository::new();
 
         // Create the PhoneIdentifier with no "next" in the chain
         let phone_identifier = Arc::new(PhoneIdentifier::new(Arc::new(mock_repo), None));
@@ -238,7 +257,7 @@ mod tests {
     async fn test_email_identifier_invalid_email() {
         // Similarly, a mock repo is not needed here for any expectation
         // because we'll return None before calling the repository method.
-        let mock_repo = MockUserRepository::new();
+        let mock_repo = MockUniqueIdentifierRepository::new();
 
         // Create the EMailIdentifier with no "next" in the chain
         let email_identifier = Arc::new(EMailIdentifier::new(Arc::new(mock_repo), None));
@@ -256,11 +275,11 @@ mod tests {
         // then the email identifier attempts to handle the token.
 
         // Mock for phone number
-        let mock_repo_phone = MockUserRepository::new();
+        let mock_repo_phone = MockUniqueIdentifierRepository::new();
         // No expectation for phone, because we'll pass an email-like token
 
         // Mock for email
-        let mut mock_repo_email = MockUserRepository::new();
+        let mut mock_repo_email = MockUniqueIdentifierRepository::new();
         mock_repo_email
             .expect_get_user_id_by_email()
             .with(eq("chained@example.com".to_string()))

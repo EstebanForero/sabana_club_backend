@@ -10,4 +10,6 @@ pub enum TournamentServiceError {
     TournamentNotFound,
     #[error("User already registered in tournament")]
     UserAlreadyRegistered,
+    #[error("Could not identify user with identificator: {0}")]
+    UserNotIdentifiable(String),
 }

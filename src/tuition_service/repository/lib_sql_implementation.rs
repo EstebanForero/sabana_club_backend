@@ -16,13 +16,13 @@ pub struct TuitionRepositoryImpl {
 }
 
 impl TuitionRepositoryImpl {
-    pub async fn new(db_url: String, db_token: String) -> Result<Self> {
-        let db = libsql::Builder::new_remote(db_url, db_token)
+    pub async fn new(db_url: &str, db_token: &str) -> Result<Arc<dyn TuitionRepository>> {
+        let db = libsql::Builder::new_remote(db_url.to_string(), db_token.to_string())
             .build()
             .await
             .map_err(|e| TuitionRepositoryError::DatabaseError(e.to_string()))?;
 
-        Ok(Self { db: Arc::new(db) })
+        Ok(Arc::new(Self { db: Arc::new(db) }))
     }
 
     async fn get_connection(&self) -> Result<libsql::Connection> {
@@ -46,12 +46,12 @@ impl TuitionRepository for TuitionRepositoryImpl {
         Ok(())
     }
 
-    async fn get_tuitions_for_user(&self, id_persona: &String) -> Result<Vec<Tuition>> {
+    async fn get_tuitions_for_user(&self, id_persona: &str) -> Result<Vec<Tuition>> {
         let conn = self.get_connection().await?;
         let mut rows = conn
             .query(
                 "SELECT id_persona, monto_usd, fecha_inscripccion FROM matricula WHERE id_persona = ?1",
-                libsql::params![id_persona.clone()],
+                libsql::params![id_persona],
             )
             .await
             .map_err(|e| TuitionRepositoryError::DatabaseError(e.to_string()))?;

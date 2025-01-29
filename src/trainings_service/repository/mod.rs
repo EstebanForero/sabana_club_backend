@@ -21,6 +21,8 @@ pub trait TrainingRepository: Send + Sync {
     /// Retrieves all users registered in a specific training session.
     async fn get_users_in_training(
         &self,
-        id_entrenamiento: &String,
+        id_entrenamiento: &str,
     ) -> Result<Vec<TrainingRegistration>>;
+
+    async fn get_trainings_for_user(&self, user_id: &str) -> Result<Vec<Training>>;
 }
