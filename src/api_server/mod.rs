@@ -1,10 +1,13 @@
 use std::error::Error;
 
 use axum::{
-    http::{HeaderValue, Method},
+    http::{
+        header::{ACCEPT, AUTHORIZATION, CONTENT_TYPE},
+        HeaderValue, Method,
+    },
     Router,
 };
-use tower_http::cors::{Any, CorsLayer};
+use tower_http::cors::{AllowHeaders, Any, CorsLayer};
 use tracing::info;
 
 use crate::global_traits::HttpService;
@@ -28,6 +31,7 @@ pub async fn start_http_server(
 
     let cors_layer = CorsLayer::new()
         .allow_credentials(true)
+        .allow_headers([AUTHORIZATION, ACCEPT, CONTENT_TYPE])
         .allow_origin(
             "https://sabana-club.vercel.app"
                 .parse::<HeaderValue>()
