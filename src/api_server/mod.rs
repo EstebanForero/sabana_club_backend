@@ -1,6 +1,9 @@
 use std::error::Error;
 
-use axum::{http::HeaderValue, Router};
+use axum::{
+    http::{HeaderValue, Method},
+    Router,
+};
 use tower_http::cors::{Any, CorsLayer};
 use tracing::info;
 
@@ -30,7 +33,7 @@ pub async fn start_http_server(
                 .parse::<HeaderValue>()
                 .unwrap(),
         )
-        .allow_methods(Any);
+        .allow_methods([Method::GET, Method::POST]);
 
     main_router = main_router.layer(cors_layer);
 
