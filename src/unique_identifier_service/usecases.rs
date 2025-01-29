@@ -1,7 +1,8 @@
-use std::sync::Arc;
+use std::{str::FromStr, sync::Arc};
 
 use async_trait::async_trait;
 use tracing::{error, info};
+use uuid::Uuid;
 
 use super::repository::UniqueIdentifierRepository;
 
@@ -153,12 +154,8 @@ impl UserIdentifier {
 #[async_trait]
 impl UniqueIdentifier for UserIdentifier {
     async fn identify(&self, identification_token: String) -> Option<String> {
-        info!("Executing unique identifier for user_id");
         if !identification_token.is_empty() {
-            let result = self
-                .user_repository
-                .comprove_id_existance(&identification_token)
-                .await;
+            let result = Uuid::from_str(&identification_token);
 
             match result {
                 Ok(_) => {
