@@ -1,7 +1,7 @@
 use std::error::Error;
 
 use axum::{http::HeaderValue, Router};
-use tower_http::cors::CorsLayer;
+use tower_http::cors::{Any, CorsLayer};
 use tracing::info;
 
 use crate::global_traits::HttpService;
@@ -23,11 +23,14 @@ pub async fn start_http_server(
 
     info!("Listenig in the port: {port}");
 
-    let cors_layer = CorsLayer::new().allow_credentials(true).allow_origin(
-        "https://sabana-club.vercel.app/login"
-            .parse::<HeaderValue>()
-            .unwrap(),
-    );
+    let cors_layer = CorsLayer::new()
+        .allow_credentials(true)
+        .allow_origin(
+            "https://sabana-club.vercel.app/login"
+                .parse::<HeaderValue>()
+                .unwrap(),
+        )
+        .allow_methods(Any);
 
     main_router = main_router.layer(cors_layer);
 
