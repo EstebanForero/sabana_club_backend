@@ -1,6 +1,6 @@
 use std::error::Error;
 
-use axum::Router;
+use axum::{http::HeaderValue, Router};
 use tower_http::cors::CorsLayer;
 use tracing::info;
 
@@ -23,8 +23,13 @@ pub async fn start_http_server(
 
     info!("Listenig in the port: {port}");
 
-    // let cors_layer = CorsLayer::permissive();
-    // main_router = main_router.layer(cors_layer);
+    let cors_layer = CorsLayer::new().allow_credentials(true).allow_origin(
+        "https://sabana-club.vercel.app/login"
+            .parse::<HeaderValue>()
+            .unwrap(),
+    );
+
+    main_router = main_router.layer(cors_layer);
 
     axum::serve(listener, main_router).await?;
 
