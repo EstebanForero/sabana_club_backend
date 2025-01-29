@@ -147,22 +147,13 @@ pub struct AuthInfo {
 
 pub async fn login_user(
     State(service): State<UserService>,
-    jar: CookieJar,
     Json(payload): Json<AuthInfo>,
-) -> Result<(HeaderMap, CookieJar), StatusCode> {
+) -> Result<String, StatusCode> {
     match service
         .authenticate_user(payload.identificacion, payload.contrasena)
         .await
     {
-        Ok(token) => {
-            let cookie = Cookie::build(("auth_token", token))
-                .http_only(true)
-                // Change later, in production, to true
-                .secure(true);
-
-            let jar = jar.add(cookie);
-            Ok((HeaderMap::new(), jar))
-        }
+        Ok(token) => Ok(token),
         Err(err) => {
             error!("Error authenticating user: {err}");
             Err(StatusCode::UNAUTHORIZED)

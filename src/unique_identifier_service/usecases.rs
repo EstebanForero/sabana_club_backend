@@ -145,19 +145,10 @@ impl UserIdentifier {
 #[async_trait]
 impl UniqueIdentifier for UserIdentifier {
     async fn identify(&self, identification_token: String) -> Option<String> {
-        if !identification_token.is_empty() {
-            let result = Uuid::from_str(&identification_token);
-
-            match result {
-                Ok(_) => {
-                    return Some(identification_token);
-                }
-                Err(err) => {
-                    error!(
-                        "Error getting user id with the user id <{identification_token}>, error: {err}"
-                    );
-                }
-            }
+        if Uuid::from_str(&identification_token).is_ok() {
+            return Some(identification_token);
+        } else {
+            println!("Error identifiying token by user id, id_token: {identification_token}, the token is not UUID");
         }
 
         if let Some(next_identifier) = &self.next_identifier {
