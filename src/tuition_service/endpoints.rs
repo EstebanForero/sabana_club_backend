@@ -56,6 +56,10 @@ impl HttpService for TuitionHttpServer {
                 "/tuition/user/{id_persona}/recent",
                 get(get_most_recent_tuition),
             )
+            .route(
+                "/tuition/user/recent",
+                get(get_most_recent_tuition_with_extension),
+            )
             .with_state(self.tuition_service.clone())
     }
 }
@@ -107,6 +111,19 @@ async fn get_most_recent_tuition(
     Path(id_persona): Path<String>,
 ) -> Result<Json<Tuition>, StatusCode> {
     match state.get_most_recent_tuition(id_persona).await {
+        Ok(tuition) => Ok(Json(tuition)),
+        Err(err) => {
+            error!("Error fetching most recent tuition: {err}");
+            Err(StatusCode::INTERNAL_SERVER_ERROR)
+        }
+    }
+}
+
+async fn get_most_recent_tuition_with_extension(
+    State(state): State<TuitionService>,
+    Extension(user_id): Extension<String>,
+) -> Result<Json<Tuition>, StatusCode> {
+    match state.get_most_recent_tuition(user_id).await {
         Ok(tuition) => Ok(Json(tuition)),
         Err(err) => {
             error!("Error fetching most recent tuition: {err}");
