@@ -23,9 +23,8 @@ pub async fn start_http_server(
 
     info!("Listenig in the port: {port}");
 
-    let cors_layer = CorsLayer::permissive();
-
-    main_router = main_router.layer(cors_layer);
+    // let cors_layer = CorsLayer::permissive();
+    // main_router = main_router.layer(cors_layer);
 
     axum::serve(listener, main_router).await?;
 
