@@ -178,4 +178,21 @@ impl UserRepository for LibSqlUserRepository {
 
         Ok(users)
     }
+
+    async fn user_is_admin(&self, user_id: &str) -> Result<bool> {
+        let conn = self.get_connection().await?;
+        let mut rows = conn
+            .query(
+                "SELECT es_admin FROM persona WHERE id_persona = ?1 LIMIT 1",
+                params![user_id],
+            )
+            .await?;
+
+        if let Some(row) = rows.next().await? {
+            let is_admin: bool = row.get(0)?;
+            Ok(is_admin)
+        } else {
+            Err(UserRepositoryError::UserNotFound)
+        }
+    }
 }

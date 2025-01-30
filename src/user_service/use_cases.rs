@@ -29,6 +29,12 @@ impl UserService {
         }
     }
 
+    pub async fn user_is_admin(&self, user_id: &str) -> Result<bool> {
+        let result = self.user_repository.user_is_admin(user_id).await?;
+
+        Ok(result)
+    }
+
     pub async fn search_user_by_search_selection(
         &self,
         search: &str,

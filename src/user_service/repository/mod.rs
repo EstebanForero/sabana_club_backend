@@ -19,6 +19,8 @@ pub trait UserRepository: Send + Sync {
     async fn get_users(&self) -> Result<Vec<UserInfo>>;
     async fn get_user_by_id(&self, user_id: &String) -> Result<UserInfo>;
 
+    async fn user_is_admin(&self, user_id: &str) -> Result<bool>;
+
     async fn search_users_by_search_selection(
         &self,
         search: &str,

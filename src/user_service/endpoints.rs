@@ -53,6 +53,7 @@ impl HttpService for UserHttpServer {
         Router::new()
             .route("/test_auth", get(test_auth))
             .route("/user", get(get_user))
+            .route("/user/admin", get(is_admin))
             .layer(middleware::from_fn_with_state(
                 self.token_key.clone(),
                 auth_middleware,
@@ -71,6 +72,19 @@ impl HttpService for UserHttpServer {
 
 async fn test_auth() -> &'static str {
     "Test for auth"
+}
+
+async fn is_admin(
+    State(service): State<UserService>,
+    Extension(user_id): Extension<String>,
+) -> Result<Json<bool>, StatusCode> {
+    match service.user_is_admin(&user_id).await {
+        Err(err) => {
+            error!("Error in is admin: {err}");
+            Err(StatusCode::INTERNAL_SERVER_ERROR)
+        }
+        Ok(result) => Ok(Json(result)),
+    }
 }
 
 async fn search_user_selection_info(
