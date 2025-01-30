@@ -20,3 +20,22 @@ pub struct UserInfo {
     pub nombre_tipo_identificacion: String,
     pub es_admin: bool,
 }
+
+#[derive(Deserialize, Serialize)]
+pub struct UserSelectionInfo {
+    pub id_persona: String,
+    pub nombre: String,
+    pub correo: String,
+    pub telefono: u32,
+    pub identificacion: String,
+    pub nombre_tipo_identificacion: String,
+    pub es_admin: bool,
+    pub matricula_valida: bool,
+}
+
+#[derive(Deserialize, Serialize)]
+pub enum SearchSelection {
+    Email,
+    PhoneNumber,
+    UserName,
+}

@@ -13,7 +13,7 @@ use crate::auth_middleware::auth_middleware;
 use crate::global_traits::HttpService;
 use crate::unique_identifier_service::usecases::UniqueIdentifier;
 
-use super::domain::UserInfo;
+use super::domain::{SearchSelection, UserInfo, UserSelectionInfo};
 use super::repository::UserRepository;
 use super::token_provider::TokenProvider;
 use super::{domain::UserCreationInfo, use_cases::UserService};
@@ -57,6 +57,10 @@ impl HttpService for UserHttpServer {
                 self.token_key.clone(),
                 auth_middleware,
             ))
+            .route(
+                "/user/search/{query}/{selection}/{limt}",
+                get(search_user_selection_info),
+            )
             .route("/user", post(create_user))
             .route("/user/{identification}", get(get_user_by_identification))
             .route("/user/all", get(get_all_users))
@@ -67,6 +71,22 @@ impl HttpService for UserHttpServer {
 
 async fn test_auth() -> &'static str {
     "Test for auth"
+}
+
+async fn search_user_selection_info(
+    State(state): State<UserService>,
+    Path(query_info): Path<(String, SearchSelection, u8)>,
+) -> Result<Json<Vec<UserSelectionInfo>>, StatusCode> {
+    match state
+        .search_user_by_search_selection(&query_info.0, query_info.2, query_info.1)
+        .await
+    {
+        Ok(users_selection) => Ok(Json(users_selection)),
+        Err(err) => {
+            error!("Error searching user selection info: {err}");
+            Err(StatusCode::INTERNAL_SERVER_ERROR)
+        }
+    }
 }
 
 async fn get_all_users(

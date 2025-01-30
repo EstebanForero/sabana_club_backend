@@ -13,4 +13,6 @@ pub enum UserRepositoryError {
     ConnectionError(#[from] libsql::Error),
     #[error("Error deserializing into a struct form the database: {0}")]
     DeserializationError(#[from] serde::de::value::Error),
+    #[error("chrono date operation error: {0}")]
+    DateOperationError(#[from] chrono::ParseError),
 }

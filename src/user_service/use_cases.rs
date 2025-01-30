@@ -4,7 +4,7 @@ use bcrypt::{hash, verify, DEFAULT_COST};
 
 use crate::unique_identifier_service::usecases::UniqueIdentifier;
 
-use super::domain::{UserCreationInfo, UserInfo};
+use super::domain::{SearchSelection, UserCreationInfo, UserInfo, UserSelectionInfo};
 use super::err::{Result, UserServiceError};
 use super::repository::UserRepository;
 use super::token_provider::TokenProvider;
@@ -27,6 +27,20 @@ impl UserService {
             unique_identifiers,
             token_provider,
         }
+    }
+
+    pub async fn search_user_by_search_selection(
+        &self,
+        search: &str,
+        limit: u8,
+        search_selection: SearchSelection,
+    ) -> Result<Vec<UserSelectionInfo>> {
+        let users_selection_info = self
+            .user_repository
+            .search_users_by_search_selection(search, limit, search_selection)
+            .await?;
+
+        Ok(users_selection_info)
     }
 
     pub async fn create_user(&self, user_creation_info: UserCreationInfo) -> Result<()> {
