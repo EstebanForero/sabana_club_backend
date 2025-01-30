@@ -14,6 +14,7 @@ use tuition_service::{
     endpoints::TuitionHttpServer, repository::lib_sql_implementation::TuitionRepositoryImpl,
 };
 use unique_identifier_service::{
+    endpoints::UniqueIdentifierHttpServer,
     repository::lib_sql_implementation::LibSqlUniqueIdentifierRepo,
     usecases::build_unique_identifier,
 };
@@ -68,7 +69,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .await
         .expect("Error creating the tuition repository");
 
-    let unique_identifier = build_unique_identifier(unique_identifier_repository);
+    let unique_identifier = build_unique_identifier(unique_identifier_repository.clone());
 
     let services: Vec<Box<dyn HttpService>> = vec![
         Box::new(
@@ -103,6 +104,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
             )
             .await,
         ),
+        Box::new(UniqueIdentifierHttpServer::new(unique_identifier_repository).await),
     ];
 
     match start_http_server(config.port, services).await {
