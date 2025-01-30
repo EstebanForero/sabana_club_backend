@@ -43,6 +43,10 @@ impl HttpService for TuitionHttpServer {
     fn get_router(&self) -> Router {
         Router::new()
             .route("/tuition", get(get_tuitions_for_user_with_extension))
+            .route(
+                "/tuition/user/recent",
+                get(get_most_recent_tuition_with_extension),
+            )
             .layer(middleware::from_fn_with_state(
                 self.token_key.clone(),
                 auth_middleware,
@@ -55,10 +59,6 @@ impl HttpService for TuitionHttpServer {
             .route(
                 "/tuition/user/{id_persona}/recent",
                 get(get_most_recent_tuition),
-            )
-            .route(
-                "/tuition/user/recent",
-                get(get_most_recent_tuition_with_extension),
             )
             .with_state(self.tuition_service.clone())
     }
