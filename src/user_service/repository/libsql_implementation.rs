@@ -122,7 +122,7 @@ impl UserRepository for LibSqlUserRepository {
             id_persona: String,
             nombre: String,
             correo: String,
-            telefono: u32,
+            telefono: u64,
             identificacion: String,
             nombre_tipo_identificacion: String,
             es_admin: bool,
