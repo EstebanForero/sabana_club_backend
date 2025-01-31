@@ -1,11 +1,9 @@
 use std::sync::Arc;
 
 use axum::extract::Path;
-use axum::http::HeaderMap;
 use axum::routing::get;
 use axum::{extract::State, http::StatusCode, routing::post, Json, Router};
 use axum::{middleware, Extension};
-use axum_extra::extract::cookie::Cookie;
 use serde::{Deserialize, Serialize};
 use tracing::error;
 
@@ -17,8 +15,6 @@ use super::domain::{SearchSelection, UserInfo, UserSelectionInfo};
 use super::repository::UserRepository;
 use super::token_provider::TokenProvider;
 use super::{domain::UserCreationInfo, use_cases::UserService};
-
-use axum_extra::extract::CookieJar;
 
 pub struct UserHttpServer {
     user_repository: Arc<dyn UserRepository>,

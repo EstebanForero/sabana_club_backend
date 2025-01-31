@@ -33,7 +33,7 @@ pub struct UserSelectionInfo {
     pub matricula_valida: bool,
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, Debug)]
 pub enum SearchSelection {
     Email,
     PhoneNumber,

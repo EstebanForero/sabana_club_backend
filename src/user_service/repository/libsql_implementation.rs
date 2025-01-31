@@ -5,8 +5,10 @@ use crate::user_service::domain::UserSelectionInfo;
 use async_trait::async_trait;
 use libsql::{de, params, Connection, Database};
 use serde::Deserialize;
+use std::collections::HashMap;
 use std::result;
 use std::sync::Arc;
+use tracing::info;
 
 use super::err::{Result, UserRepositoryError};
 use super::UserRepository;
@@ -127,6 +129,8 @@ impl UserRepository for LibSqlUserRepository {
             fecha_inscripccion: String,
         }
 
+        info!("Executing with search: |{search}|, limit: |{limit}| and seach parameter: |{search_parameter:?}|");
+
         let conn = self.get_connection().await?;
 
         let column = match search_parameter {
@@ -152,7 +156,8 @@ impl UserRepository for LibSqlUserRepository {
             .query(&query, params![format!("%{}%", search), limit_i64])
             .await?;
 
-        let mut users = Vec::new();
+        let mut users = HashMap::new();
+
         while let Some(row) = rows.next().await? {
             let temp_user = de::from_row::<TempSelectionInfo>(&row)?;
 
@@ -164,19 +169,26 @@ impl UserRepository for LibSqlUserRepository {
                 .num_days();
             let matricula_valida = days_passed <= 30;
 
-            users.push(UserSelectionInfo {
-                id_persona: temp_user.id_persona,
-                nombre: temp_user.nombre,
-                correo: temp_user.correo,
-                telefono: temp_user.telefono,
-                identificacion: temp_user.identificacion,
-                nombre_tipo_identificacion: temp_user.nombre_tipo_identificacion,
-                es_admin: temp_user.es_admin,
-                matricula_valida,
-            });
+            users
+                .entry(temp_user.id_persona.clone())
+                .and_modify(|persona: &mut UserSelectionInfo| {
+                    if matricula_valida {
+                        persona.es_admin = true
+                    }
+                })
+                .or_insert(UserSelectionInfo {
+                    id_persona: temp_user.id_persona,
+                    nombre: temp_user.nombre,
+                    correo: temp_user.correo,
+                    telefono: temp_user.telefono,
+                    identificacion: temp_user.identificacion,
+                    nombre_tipo_identificacion: temp_user.nombre_tipo_identificacion,
+                    es_admin: temp_user.es_admin,
+                    matricula_valida,
+                });
         }
 
-        Ok(users)
+        Ok(users.into_values().collect())
     }
 
     async fn user_is_admin(&self, user_id: &str) -> Result<bool> {
