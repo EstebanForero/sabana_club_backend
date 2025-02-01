@@ -115,20 +115,6 @@ impl UserRepository for LibSqlUserRepository {
         limit: u8,
         search_parameter: SearchSelection,
     ) -> Result<Vec<UserSelectionInfo>> {
-        use chrono::{NaiveDate, Utc};
-
-        #[derive(Deserialize)]
-        struct TempSelectionInfo {
-            id_persona: String,
-            nombre: String,
-            correo: String,
-            telefono: u64,
-            identificacion: String,
-            nombre_tipo_identificacion: String,
-            es_admin: bool,
-            fecha_inscripccion: String,
-        }
-
         info!("Executing with search: |{search}|, limit: |{limit}| and seach parameter: |{search_parameter:?}|");
 
         let conn = self.get_connection().await?;
@@ -140,12 +126,16 @@ impl UserRepository for LibSqlUserRepository {
         };
 
         let query = format!(
-            "SELECT p.id_persona, p.nombre, p.correo, p.telefono, \
-                p.identificacion, p.nombre_tipo_identificacion, p.es_admin, \
-                m.fecha_inscripccion \
-                FROM persona p \
-                JOIN matricula m ON p.id_persona = m.id_persona \
-                WHERE p.{} LIKE ?1 \
+            "SELECT p.id_persona, p.nombre, p.correo, p.telefono,
+                p.identificacion, p.nombre_tipo_identificacion, p.es_admin,
+                CASE 
+                    WHEN (JULIANDAY(DATE('now')) - JULIANDAY(MAX(m.fecha_inscripccion))) > 30 OR MAX(m.fecha_inscripccion) IS NULL THEN FALSE
+                    ELSE TRUE
+                END AS matricula_valida
+                FROM persona p
+                LEFT JOIN matricula m ON p.id_persona = m.id_persona
+                WHERE p.{} LIKE ?1
+                GROUP BY p.id_persona
                 LIMIT ?2",
             column
         );
@@ -156,39 +146,15 @@ impl UserRepository for LibSqlUserRepository {
             .query(&query, params![format!("%{}%", search), limit_i64])
             .await?;
 
-        let mut users = HashMap::new();
+        let mut users = Vec::new();
 
         while let Some(row) = rows.next().await? {
-            let temp_user = de::from_row::<TempSelectionInfo>(&row)?;
+            let temp_user = de::from_row::<UserSelectionInfo>(&row)?;
 
-            let parsed_date = NaiveDate::parse_from_str(&temp_user.fecha_inscripccion, "%Y-%m-%d")?;
-
-            let days_passed = Utc::now()
-                .date_naive()
-                .signed_duration_since(parsed_date)
-                .num_days();
-            let matricula_valida = days_passed <= 30;
-
-            users
-                .entry(temp_user.id_persona.clone())
-                .and_modify(|persona: &mut UserSelectionInfo| {
-                    if matricula_valida {
-                        persona.es_admin = true
-                    }
-                })
-                .or_insert(UserSelectionInfo {
-                    id_persona: temp_user.id_persona,
-                    nombre: temp_user.nombre,
-                    correo: temp_user.correo,
-                    telefono: temp_user.telefono,
-                    identificacion: temp_user.identificacion,
-                    nombre_tipo_identificacion: temp_user.nombre_tipo_identificacion,
-                    es_admin: temp_user.es_admin,
-                    matricula_valida,
-                });
+            users.push(temp_user);
         }
 
-        Ok(users.into_values().collect())
+        Ok(users)
     }
 
     async fn user_is_admin(&self, user_id: &str) -> Result<bool> {
