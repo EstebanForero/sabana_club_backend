@@ -27,6 +27,7 @@ mod models;
 
 pub mod auth_middleware;
 mod global_traits;
+mod requests_service;
 mod tournament_service;
 mod trainings_service;
 mod tuition_service;
