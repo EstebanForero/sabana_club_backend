@@ -24,4 +24,6 @@ pub trait TournamentRepository: Send + Sync {
 
     async fn get_tournaments_info_for_user(&self, user_id: &str)
         -> Result<Vec<UserTournamentInfo>>;
+
+    async fn delete_tournament(&self, tournament_id: &str) -> Result<()>;
 }

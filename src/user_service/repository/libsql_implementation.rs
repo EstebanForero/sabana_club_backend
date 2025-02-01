@@ -2,6 +2,7 @@ use crate::user_service::domain::SearchSelection;
 use crate::user_service::domain::UserCreationInfo;
 use crate::user_service::domain::UserInfo;
 use crate::user_service::domain::UserSelectionInfo;
+use crate::user_service::domain::UserUpdating;
 use async_trait::async_trait;
 use libsql::{de, params, Connection, Database};
 use serde::Deserialize;
@@ -155,6 +156,23 @@ impl UserRepository for LibSqlUserRepository {
         }
 
         Ok(users)
+    }
+
+    async fn modify_user(&self, updated_user_info: UserUpdating, user_id: &str) -> Result<()> {
+        let conn = self.get_connection().await?;
+
+        conn.execute("UPDATE persona SET nombre = ?1, correo = ?2, telefono = ?3, identificacion = ?4, nombre_tipo_identificacion = ?5
+                WHERE user_id = ?6"
+            , params![
+            updated_user_info.nombre,
+            updated_user_info.correo,
+            updated_user_info.telefono,
+            updated_user_info.identificacion,
+            updated_user_info.nombre_tipo_identificacion,
+            user_id
+        ]).await?;
+
+        Ok(())
     }
 
     async fn user_is_admin(&self, user_id: &str) -> Result<bool> {

@@ -2,7 +2,7 @@ use axum::{
     extract::{Json, Path, State},
     http::StatusCode,
     middleware,
-    routing::{get, post},
+    routing::{delete, get, post},
     Extension, Router,
 };
 use tracing::error;
@@ -54,6 +54,10 @@ impl HttpService for TournamentHttpServer {
                 auth_middleware,
             ))
             .route(
+                "/tournament/delete/{tournament_id}",
+                delete(delete_tournament),
+            )
+            .route(
                 "/tournament/name/{tournament_name}",
                 post(create_tournament),
             )
@@ -65,6 +69,19 @@ impl HttpService for TournamentHttpServer {
                 post(get_users_in_tournament),
             )
             .with_state(tournament_service)
+    }
+}
+
+async fn delete_tournament(
+    State(state): State<TournamentService>,
+    Path(tournament_id): Path<String>,
+) -> StatusCode {
+    match state.delete_tournament(&tournament_id).await {
+        Ok(_) => StatusCode::CREATED,
+        Err(err) => {
+            error!("Error creating tournament: {err}");
+            StatusCode::INTERNAL_SERVER_ERROR
+        }
     }
 }
 

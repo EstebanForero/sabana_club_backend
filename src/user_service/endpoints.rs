@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use axum::extract::Path;
-use axum::routing::get;
+use axum::routing::{get, put};
 use axum::{extract::State, http::StatusCode, routing::post, Json, Router};
 use axum::{middleware, Extension};
 use serde::{Deserialize, Serialize};
@@ -11,7 +11,7 @@ use crate::auth_middleware::auth_middleware;
 use crate::global_traits::HttpService;
 use crate::unique_identifier_service::usecases::UniqueIdentifier;
 
-use super::domain::{SearchSelection, UserInfo, UserSelectionInfo};
+use super::domain::{SearchSelection, UserInfo, UserSelectionInfo, UserUpdating};
 use super::repository::UserRepository;
 use super::token_provider::TokenProvider;
 use super::{domain::UserCreationInfo, use_cases::UserService};
@@ -50,6 +50,7 @@ impl HttpService for UserHttpServer {
             .route("/test_auth", get(test_auth))
             .route("/user", get(get_user))
             .route("/user/admin", get(is_admin))
+            .route("/user", put(update_user))
             .layer(middleware::from_fn_with_state(
                 self.token_key.clone(),
                 auth_middleware,
@@ -80,6 +81,20 @@ async fn is_admin(
             Err(StatusCode::INTERNAL_SERVER_ERROR)
         }
         Ok(result) => Ok(Json(result)),
+    }
+}
+
+async fn update_user(
+    State(service): State<UserService>,
+    Extension(user_id): Extension<String>,
+    Json(user_updation_info): Json<UserUpdating>,
+) -> StatusCode {
+    match service.update_user(user_updation_info, &user_id).await {
+        Err(err) => {
+            error!("Error in update user: {err}");
+            StatusCode::INTERNAL_SERVER_ERROR
+        }
+        Ok(_) => StatusCode::OK,
     }
 }
 

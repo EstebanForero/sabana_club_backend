@@ -48,6 +48,19 @@ impl TournamentRepository for TournamentRepositoryImpl {
         Ok(())
     }
 
+    async fn delete_tournament(&self, tournament_id: &str) -> Result<()> {
+        let conn = self.get_connection().await?;
+
+        conn.execute(
+            "DELETE torneo WHERE id_torneo = ?1",
+            libsql::params![tournament_id],
+        )
+        .await
+        .map_err(|e| TournamentRepositoryError::DatabaseError(e.to_string()))?;
+
+        Ok(())
+    }
+
     async fn register_user_in_tournament(
         &self,
         registration: UserTournamentRegistration,

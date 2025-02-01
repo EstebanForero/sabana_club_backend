@@ -4,6 +4,7 @@ use super::domain::UserCreationInfo;
 pub mod err;
 use super::domain::UserInfo;
 use super::domain::UserSelectionInfo;
+use super::domain::UserUpdating;
 use async_trait::async_trait;
 use err::Result;
 use mockall::automock;
@@ -20,6 +21,8 @@ pub trait UserRepository: Send + Sync {
     async fn get_user_by_id(&self, user_id: &String) -> Result<UserInfo>;
 
     async fn user_is_admin(&self, user_id: &str) -> Result<bool>;
+
+    async fn modify_user(&self, updated_user_info: UserUpdating, user_id: &str) -> Result<()>;
 
     async fn search_users_by_search_selection(
         &self,

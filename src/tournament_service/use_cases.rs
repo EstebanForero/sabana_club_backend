@@ -25,6 +25,14 @@ impl TournamentService {
         }
     }
 
+    pub async fn delete_tournament(&self, tournament_id: &str) -> Result<()> {
+        self.tournament_repository
+            .delete_tournament(tournament_id)
+            .await?;
+
+        Ok(())
+    }
+
     pub async fn create_tournament(&self, nombre: String) -> Result<()> {
         let tournament_id = Uuid::new_v4().to_string();
 

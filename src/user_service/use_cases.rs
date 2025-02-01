@@ -4,7 +4,7 @@ use bcrypt::{hash, verify, DEFAULT_COST};
 
 use crate::unique_identifier_service::usecases::UniqueIdentifier;
 
-use super::domain::{SearchSelection, UserCreationInfo, UserInfo, UserSelectionInfo};
+use super::domain::{SearchSelection, UserCreationInfo, UserInfo, UserSelectionInfo, UserUpdating};
 use super::err::{Result, UserServiceError};
 use super::repository::UserRepository;
 use super::token_provider::TokenProvider;
@@ -47,6 +47,14 @@ impl UserService {
             .await?;
 
         Ok(users_selection_info)
+    }
+
+    pub async fn update_user(&self, user_update_info: UserUpdating, user_id: &str) -> Result<()> {
+        self.user_repository
+            .modify_user(user_update_info, user_id)
+            .await?;
+
+        Ok(())
     }
 
     pub async fn create_user(&self, user_creation_info: UserCreationInfo) -> Result<()> {
