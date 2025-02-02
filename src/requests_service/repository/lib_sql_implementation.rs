@@ -47,7 +47,7 @@ impl RequestRepository for LibSqlRequestRepository {
         let conn = self.get_connection().await?;
 
         let mut rows = conn.query(
-            "SELECT r.requester_id, r.request_id, r.command_name, r.command_content, r.aprover_id
+            "SELECT r.requester_id, r.request_id, r.command_name, r.command_content, r.aprover_id, r.completed
             FROM request_for_approval AS r WHERE r.command_name = ?1",
             params![command_name],
         ).await?;
@@ -67,7 +67,7 @@ impl RequestRepository for LibSqlRequestRepository {
         let conn = self.get_connection().await?;
 
         let mut row = conn.query(
-            "SELECT r.requester_id, r.request_id, r.command_name, r.command_content, r.aprover_id
+            "SELECT r.requester_id, r.request_id, r.command_name, r.command_content, r.aprover_id, r.completed
             FROM request_for_approval AS r WHERE r.request_id = ?1",
             params![command_id],
         ).await?;
@@ -117,7 +117,7 @@ impl RequestRepository for LibSqlRequestRepository {
 
         let mut rows = conn
             .query(
-                "SELECT requester_id, request_id, command_name, command_content, aprover_id
+                "SELECT requester_id, request_id, command_name, command_content, aprover_id, completed
 FROM request_for_approval",
                 params![],
             )
