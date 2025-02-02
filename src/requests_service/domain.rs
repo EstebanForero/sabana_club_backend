@@ -19,6 +19,24 @@ pub struct RequestForApproval {
     pub aprover_id: Option<String>,
 }
 
+impl TryFrom<RequestForApprovalDb> for RequestForApproval {
+    type Error = serde_json::Error;
+
+    fn try_from(value: RequestForApprovalDb) -> std::result::Result<Self, Self::Error> {
+        let command_content: RequestContent = serde_json::from_str(&value.command_content)?;
+
+        let result = Self {
+            request_id: value.request_id,
+            requester_id: value.requester_id,
+            command_name: value.command_name,
+            command_content,
+            aprover_id: value.aprover_id,
+        };
+
+        Ok(result)
+    }
+}
+
 #[derive(Debug, Deserialize, Serialize)]
 pub struct RequestForApprovalDb {
     pub requester_id: String,

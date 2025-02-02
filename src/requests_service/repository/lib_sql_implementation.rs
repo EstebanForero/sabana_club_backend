@@ -60,12 +60,12 @@ impl RequestRepository for LibSqlRequestRepository {
             params![command_id],
         ).await?;
 
-        let command: RequestForApproval = match row.next().await? {
+        let command: RequestForApprovalDb = match row.next().await? {
             Some(next_row) => de::from_row(&next_row)?,
             None => return Err(RequestRepositoryError::CommandDontExist),
         };
 
-        Ok(command)
+        Ok(RequestForApproval::try_from(command)?)
     }
 
     async fn create_command(&self, request: RequestForApprovalDb) -> Result<()> {
@@ -116,15 +116,7 @@ FROM request_for_approval",
         while let Some(row) = rows.next().await? {
             let request: RequestForApprovalDb = de::from_row(&row)?;
 
-            let command_content: RequestContent = serde_json::from_str(&request.command_content)?;
-
-            let request = RequestForApproval {
-                requester_id: request.requester_id,
-                request_id: request.request_id,
-                command_name: request.command_name,
-                command_content,
-                aprover_id: request.aprover_id,
-            };
+            let request = RequestForApproval::try_from(request)?;
 
             requests.push(request);
         }
