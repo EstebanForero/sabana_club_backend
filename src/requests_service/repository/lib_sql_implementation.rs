@@ -43,9 +43,9 @@ impl RequestRepository for LibSqlRequestRepository {
         let mut requests = Vec::new();
 
         while let Some(row) = rows.next().await? {
-            let request = de::from_row(&row)?;
+            let request: RequestForApprovalDb = de::from_row(&row)?;
 
-            requests.push(request);
+            requests.push(RequestForApproval::try_from(request)?);
         }
 
         Ok(requests)
