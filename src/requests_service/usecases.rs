@@ -38,6 +38,16 @@ impl RequestService {
             .await?)
     }
 
+    pub async fn get_all_requests(&self) -> Result<Vec<RequestForApproval>> {
+        Ok(self.request_repository.get_all_commands().await?)
+    }
+
+    pub async fn delete_request(&self, request_id: String) -> Result<()> {
+        self.request_repository.delete_request(&request_id).await?;
+
+        Ok(())
+    }
+
     pub async fn get_request_by_id(&self, request_id: String) -> Result<RequestForApproval> {
         Ok(self
             .request_repository

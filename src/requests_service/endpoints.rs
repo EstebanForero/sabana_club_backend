@@ -4,7 +4,7 @@ use axum::{
     extract::{Path, State},
     http::StatusCode,
     middleware,
-    routing::{get, post},
+    routing::{delete, get, post},
     Extension, Json, Router,
 };
 use tracing::{error, info};
@@ -79,11 +79,38 @@ impl HttpService for RequestHttpServer {
             .route("/request/id/{request_id}", get(get_request_by_id))
             .route("/request", post(create_request))
             .route("/request/execute/{request_id}", post(execute_request))
+            .route("/request/all", get(get_all_requests))
+            .route("/request/{request_id}", delete(delete_request))
             .layer(middleware::from_fn_with_state(
                 self.token_key.clone(),
                 auth_middleware,
             ))
             .with_state(request_service)
+    }
+}
+
+async fn get_all_requests(
+    State(request_service): State<RequestService>,
+) -> Result<Json<Vec<RequestForApproval>>, StatusCode> {
+    match request_service.get_all_requests().await {
+        Err(err) => {
+            error!("Error getting request by name: {err}");
+            Err(StatusCode::INTERNAL_SERVER_ERROR)
+        }
+        Ok(requests) => Ok(Json(requests)),
+    }
+}
+
+async fn delete_request(
+    State(request_service): State<RequestService>,
+    Path(request_id): Path<String>,
+) -> StatusCode {
+    match request_service.delete_request(request_id).await {
+        Err(err) => {
+            error!("Error executing request: {err}");
+            StatusCode::INTERNAL_SERVER_ERROR
+        }
+        Ok(_) => StatusCode::OK,
     }
 }
 

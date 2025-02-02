@@ -87,4 +87,38 @@ impl RequestRepository for LibSqlRequestRepository {
 
         Ok(())
     }
+
+    async fn delete_request(&self, request_id: &str) -> Result<()> {
+        let conn = self.get_connection().await?;
+
+        conn.execute(
+            "DELETE FROM request_for_approval WHERE request_id = ?1",
+            params![request_id],
+        )
+        .await?;
+
+        Ok(())
+    }
+
+    async fn get_all_commands(&self) -> Result<Vec<RequestForApproval>> {
+        let conn = self.get_connection().await?;
+
+        let mut rows = conn
+            .query(
+                "SELECT requester_id, request_id, command_name, command_content, aprover_id
+            FROM request_for_approval",
+                params![],
+            )
+            .await?;
+
+        let mut requests = Vec::new();
+
+        while let Some(row) = rows.next().await? {
+            let request = de::from_row(&row)?;
+
+            requests.push(request);
+        }
+
+        Ok(requests)
+    }
 }

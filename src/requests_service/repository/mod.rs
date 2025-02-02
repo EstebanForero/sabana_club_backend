@@ -13,4 +13,8 @@ pub trait RequestRepository: Send + Sync {
     async fn get_commands_by_id(&self, command_id: &str) -> Result<RequestForApproval>;
 
     async fn create_command(&self, request: RequestForApprovalDb) -> Result<()>;
+
+    async fn delete_request(&self, request_id: &str) -> Result<()>;
+
+    async fn get_all_commands(&self) -> Result<Vec<RequestForApproval>>;
 }
