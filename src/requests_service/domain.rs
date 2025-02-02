@@ -45,7 +45,7 @@ pub enum RequestContent {
 impl RequestContent {
     pub fn get_name(&self) -> String {
         match &self {
-            RequestContent::UpdateUser { .. } => "create_user",
+            RequestContent::UpdateUser { .. } => "update_user",
         }
         .to_string()
     }
