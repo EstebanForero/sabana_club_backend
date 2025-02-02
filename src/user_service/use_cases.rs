@@ -57,9 +57,11 @@ impl UserService {
         Ok(())
     }
 
-    pub async fn create_user(&self, user_creation_info: UserCreationInfo) -> Result<()> {
-        let hashed_password = hash(&user_creation_info.contrasena, DEFAULT_COST)
-            .map_err(|err| UserServiceError::PasswordHashError(err.to_string()))?;
+    pub async fn create_user_with_hashing(
+        &self,
+        user_creation_info: UserCreationInfo,
+    ) -> Result<()> {
+        let hashed_password = Self::hash_password(&user_creation_info.contrasena)?;
 
         let hashed_user_info = UserCreationInfo {
             contrasena: hashed_password,
@@ -71,6 +73,26 @@ impl UserService {
 
         self.user_repository.create_user(hashed_user_info).await?;
         Ok(())
+    }
+
+    pub async fn create_user(&self, user_creation_info: UserCreationInfo) -> Result<()> {
+        let hashed_user_info = UserCreationInfo {
+            contrasena: user_creation_info.contrasena,
+            nombre_tipo_identificacion: user_creation_info
+                .nombre_tipo_identificacion
+                .to_uppercase(),
+            ..user_creation_info
+        };
+
+        self.user_repository.create_user(hashed_user_info).await?;
+        Ok(())
+    }
+
+    pub fn hash_password(password: &str) -> Result<String> {
+        let hashed_password = hash(password, DEFAULT_COST)
+            .map_err(|err| UserServiceError::PasswordHashError(err.to_string()))?;
+
+        return Ok(hashed_password);
     }
 
     pub async fn authenticate_user(&self, identifier: String, password: String) -> Result<String> {

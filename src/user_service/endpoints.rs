@@ -175,7 +175,7 @@ async fn create_user(
     State(state): State<UserService>,
     Json(user_creation_info): Json<UserCreationInfo>,
 ) -> StatusCode {
-    match state.create_user(user_creation_info).await {
+    match state.create_user_with_hashing(user_creation_info).await {
         Ok(_) => StatusCode::CREATED,
         Err(err) => {
             error!("Error creating user: {err}");

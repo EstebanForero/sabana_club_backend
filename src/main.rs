@@ -2,6 +2,10 @@ use std::{error::Error, sync::Arc};
 
 use api_server::start_http_server;
 use global_traits::HttpService;
+use requests_service::{
+    endpoints::RequestHttpServer,
+    repository::{lib_sql_implementation::LibSqlRequestRepository, RequestRepository},
+};
 use serde::Deserialize;
 use tournament_service::{
     endpoints::TournamentHttpServer, repository::lib_sql_implementation::TournamentRepositoryImpl,
@@ -70,6 +74,10 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .await
         .expect("Error creating the tuition repository");
 
+    let request_repository = LibSqlRequestRepository::new(&config.db_url, &config.db_token)
+        .await
+        .expect("Error creating the tuition repository");
+
     let unique_identifier = build_unique_identifier(unique_identifier_repository.clone());
 
     let services: Vec<Box<dyn HttpService>> = vec![
@@ -83,7 +91,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         ),
         Box::new(
             TournamentHttpServer::new(
-                tournament_repository,
+                tournament_repository.clone(),
                 unique_identifier.clone(),
                 &config.token_key,
             )
@@ -91,7 +99,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         ),
         Box::new(
             TrainingHttpServer::new(
-                training_repository,
+                training_repository.clone(),
                 unique_identifier.clone(),
                 &config.token_key,
             )
@@ -99,13 +107,23 @@ async fn main() -> Result<(), Box<dyn Error>> {
         ),
         Box::new(
             TuitionHttpServer::new(
-                tuition_repository,
+                tuition_repository.clone(),
                 unique_identifier.clone(),
                 &config.token_key,
             )
             .await,
         ),
         Box::new(UniqueIdentifierHttpServer::new(unique_identifier_repository).await),
+        Box::new(
+            RequestHttpServer::new(
+                user_repository.clone(),
+                tournament_repository.clone(),
+                request_repository.clone(),
+                unique_identifier.clone(),
+                config.token_key.to_string(),
+            )
+            .await,
+        ),
     ];
 
     match start_http_server(config.port, services).await {

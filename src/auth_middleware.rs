@@ -4,7 +4,7 @@ use axum::{
     middleware::Next,
     response::IntoResponse,
 };
-use axum_extra::extract::CookieJar;
+
 use tracing::{error, info};
 
 use crate::user_service::token_provider::TokenProvider;
