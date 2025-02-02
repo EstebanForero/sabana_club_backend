@@ -10,7 +10,7 @@ pub struct UserCreationInfo {
     pub nombre_tipo_identificacion: String,
 }
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, PartialEq)]
 pub struct UserUpdating {
     pub nombre: String,
     pub correo: String,

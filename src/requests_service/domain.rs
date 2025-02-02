@@ -10,7 +10,7 @@ use crate::{
 
 use super::err::Result;
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, PartialEq)]
 pub struct RequestForApproval {
     pub requester_id: String,
     pub request_id: String,
@@ -34,7 +34,7 @@ pub struct RequestCreation {
     pub command_content: RequestContent,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, PartialEq)]
 pub enum RequestContent {
     UpdateUser {
         user_updation: UserUpdating,

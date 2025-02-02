@@ -18,4 +18,6 @@ pub enum RequestRepositoryError {
     DateOperationError(#[from] chrono::ParseError),
     #[error("command does not exists")]
     CommandDontExist,
+    #[error("serialization error in serde_json: {0}")]
+    DeserializationErrorSerdeJson(#[from] serde_json::Error),
 }

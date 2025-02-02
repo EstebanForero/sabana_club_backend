@@ -12,6 +12,6 @@ pub enum UserRepositoryError {
     UserNotFound,
     #[error("Database connection error: {0}")]
     ConnectionError(#[from] libsql::Error),
-    #[error("Error deserializing into a struct form the database: {0}")]
+    #[error("Error deserializing into a struct from the database: {0}")]
     DeserializationError(#[from] serde::de::value::Error),
 }

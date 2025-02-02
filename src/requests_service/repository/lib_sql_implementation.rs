@@ -1,6 +1,6 @@
 use std::{result, sync::Arc};
 
-use crate::requests_service::domain::{RequestForApproval, RequestForApprovalDb};
+use crate::requests_service::domain::{RequestContent, RequestForApproval, RequestForApprovalDb};
 
 use super::{
     err::{RequestRepositoryError, Result},
@@ -106,7 +106,7 @@ impl RequestRepository for LibSqlRequestRepository {
         let mut rows = conn
             .query(
                 "SELECT requester_id, request_id, command_name, command_content, aprover_id
-            FROM request_for_approval",
+FROM request_for_approval",
                 params![],
             )
             .await?;
@@ -114,11 +114,101 @@ impl RequestRepository for LibSqlRequestRepository {
         let mut requests = Vec::new();
 
         while let Some(row) = rows.next().await? {
-            let request = de::from_row(&row)?;
+            let request: RequestForApprovalDb = de::from_row(&row)?;
+
+            let command_content: RequestContent = serde_json::from_str(&request.command_content)?;
+
+            let request = RequestForApproval {
+                requester_id: request.requester_id,
+                request_id: request.request_id,
+                command_name: request.command_name,
+                command_content,
+                aprover_id: request.aprover_id,
+            };
 
             requests.push(request);
         }
 
         Ok(requests)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{requests_service::domain::RequestContent, user_service::domain::UserUpdating};
+
+    use super::*;
+    use serde_json;
+
+    #[test]
+    fn test_serialization_and_deserialization() {
+        let original_request = RequestForApproval {
+            requester_id: "12345".to_string(),
+            request_id: "54321".to_string(),
+            command_name: "UpdateUserCommand".to_string(),
+            command_content: RequestContent::UpdateUser {
+                user_updation: UserUpdating {
+                    nombre: "Esteban".to_string(),
+                    correo: "estebanmff@gmail.com".to_string(),
+                    telefono: 3185920708,
+                    identificacion: "1014739191".to_string(),
+                    nombre_tipo_identificacion: "CC".to_string(),
+                },
+                user_id: "5f405541-d1df-454a-b2fc-56004ba380cc".to_string(),
+            },
+            aprover_id: Some("67890".to_string()),
+        };
+
+        let serialized =
+            serde_json::to_string(&original_request).expect("Serialization should succeed");
+
+        let deserialized: RequestForApproval =
+            serde_json::from_str(&serialized).expect("Deserialization should succeed");
+
+        assert_eq!(original_request, deserialized);
+
+        println!("Serialized JSON: {}", serialized);
+    }
+
+    #[test]
+    fn test_deserialization_of_command_content() {
+        let json = r#"
+        {
+            "requester_id": "12345",
+            "request_id": "54321",
+            "command_name": "UpdateUserCommand",
+            "command_content": {
+                "UpdateUser": {
+                    "user_updation": {
+                        "nombre": "Esteban",
+                        "correo": "estebanmff@gmail.com",
+                        "telefono": 3185920708,
+                        "identificacion": "1014739191",
+                        "nombre_tipo_identificacion": "CC"
+                    },
+                    "user_id": "5f405541-d1df-454a-b2fc-56004ba380cc"
+                }
+            },
+            "aprover_id": "67890"
+        }
+        "#;
+
+        let deserialized: RequestForApproval =
+            serde_json::from_str(json).expect("Deserialization should succeed");
+
+        if let RequestContent::UpdateUser {
+            user_updation,
+            user_id,
+        } = deserialized.command_content
+        {
+            assert_eq!(user_updation.nombre, "Esteban");
+            assert_eq!(user_updation.correo, "estebanmff@gmail.com");
+            assert_eq!(user_updation.telefono, 3185920708);
+            assert_eq!(user_updation.identificacion, "1014739191");
+            assert_eq!(user_updation.nombre_tipo_identificacion, "CC");
+            assert_eq!(user_id, "5f405541-d1df-454a-b2fc-56004ba380cc");
+        } else {
+            panic!("Expected command_content to be UpdateUser variant");
+        }
     }
 }
