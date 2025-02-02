@@ -51,6 +51,7 @@ impl HttpService for UserHttpServer {
             .route("/user", get(get_user))
             .route("/user/admin", get(is_admin))
             .route("/user", put(update_user))
+            .route("/user/id/{user_id}", put(update_other_user))
             .layer(middleware::from_fn_with_state(
                 self.token_key.clone(),
                 auth_middleware,
@@ -81,6 +82,20 @@ async fn is_admin(
             Err(StatusCode::INTERNAL_SERVER_ERROR)
         }
         Ok(result) => Ok(Json(result)),
+    }
+}
+
+async fn update_other_user(
+    State(service): State<UserService>,
+    Path(user_id): Path<String>,
+    Json(user_updation_info): Json<UserUpdating>,
+) -> StatusCode {
+    match service.update_user(user_updation_info, &user_id).await {
+        Err(err) => {
+            error!("Error in update user: {err}");
+            StatusCode::INTERNAL_SERVER_ERROR
+        }
+        Ok(_) => StatusCode::OK,
     }
 }
 
