@@ -17,6 +17,7 @@ pub struct RequestForApproval {
     pub command_name: String,
     pub command_content: RequestContent,
     pub aprover_id: Option<String>,
+    pub completed: bool,
 }
 
 impl TryFrom<RequestForApprovalDb> for RequestForApproval {
@@ -31,6 +32,7 @@ impl TryFrom<RequestForApprovalDb> for RequestForApproval {
             command_name: value.command_name,
             command_content,
             aprover_id: value.aprover_id,
+            completed: value.completed,
         };
 
         Ok(result)
@@ -44,6 +46,7 @@ pub struct RequestForApprovalDb {
     pub command_name: String,
     pub command_content: String,
     pub aprover_id: Option<String>,
+    pub completed: bool,
 }
 
 #[derive(Debug, Deserialize, Serialize)]

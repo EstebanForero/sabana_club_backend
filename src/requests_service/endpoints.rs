@@ -116,9 +116,13 @@ async fn delete_request(
 
 async fn execute_request(
     State(request_service): State<RequestService>,
+    Extension(aprover_id): Extension<String>,
     Path(request_id): Path<String>,
 ) -> StatusCode {
-    match request_service.execute_request(request_id).await {
+    match request_service
+        .execute_request(request_id, &aprover_id)
+        .await
+    {
         Err(err) => {
             error!("Error executing request: {err}");
             StatusCode::INTERNAL_SERVER_ERROR

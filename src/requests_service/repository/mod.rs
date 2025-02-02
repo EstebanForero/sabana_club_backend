@@ -17,4 +17,6 @@ pub trait RequestRepository: Send + Sync {
     async fn delete_request(&self, request_id: &str) -> Result<()>;
 
     async fn get_all_commands(&self) -> Result<Vec<RequestForApproval>>;
+
+    async fn aprove_request(&self, request_id: &str, approver_id: &str) -> Result<()>;
 }

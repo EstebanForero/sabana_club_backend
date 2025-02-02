@@ -55,10 +55,17 @@ impl RequestService {
             .await?)
     }
 
-    pub async fn execute_request(&self, request_id: String) -> Result<RequestForApproval> {
+    pub async fn execute_request(&self, request_id: String, aprover_id: &str) -> Result<()> {
         let request = self.get_request_by_id(request_id).await?;
+        self.command_executor
+            .execute_command(request.command_content)
+            .await?;
 
-        Ok(request)
+        self.request_repository
+            .aprove_request(&request.request_id, aprover_id)
+            .await?;
+
+        Ok(())
     }
 
     pub async fn create_request(
@@ -74,6 +81,7 @@ impl RequestService {
             command_name: request_content.get_name(),
             command_content,
             aprover_id: None,
+            completed: false,
         };
 
         self.request_repository.create_command(request).await?;

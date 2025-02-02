@@ -31,6 +31,18 @@ impl LibSqlRequestRepository {
 
 #[async_trait]
 impl RequestRepository for LibSqlRequestRepository {
+    async fn aprove_request(&self, request_id: &str, approver_id: &str) -> Result<()> {
+        let conn = self.get_connection().await?;
+
+        conn.execute(
+            "UPDATE request_for_approval SET completed = 1, aprover_id = ?1 WHERE request_id = ?2",
+            params![approver_id, request_id],
+        )
+        .await?;
+
+        Ok(())
+    }
+
     async fn get_commands_by_name(&self, command_name: &str) -> Result<Vec<RequestForApproval>> {
         let conn = self.get_connection().await?;
 
@@ -148,6 +160,7 @@ mod tests {
                 },
                 user_id: "5f405541-d1df-454a-b2fc-56004ba380cc".to_string(),
             },
+            completed: false,
             aprover_id: Some("67890".to_string()),
         };
 
