@@ -162,7 +162,7 @@ impl UserRepository for LibSqlUserRepository {
         let conn = self.get_connection().await?;
 
         conn.execute("UPDATE persona SET nombre = ?1, correo = ?2, telefono = ?3, identificacion = ?4, nombre_tipo_identificacion = ?5
-                WHERE user_id = ?6"
+                WHERE id_persona = ?6"
             , params![
             updated_user_info.nombre,
             updated_user_info.correo,
