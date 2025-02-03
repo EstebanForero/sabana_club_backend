@@ -25,6 +25,13 @@ impl TournamentService {
         }
     }
 
+    pub async fn get_tournament(&self, tournament_id: &str) -> Result<Tournament> {
+        Ok(self
+            .tournament_repository
+            .get_tournament(tournament_id)
+            .await?)
+    }
+
     pub async fn get_tournament_positions(&self, tournament_id: &str) -> Result<Vec<u32>> {
         let positions = self
             .tournament_repository

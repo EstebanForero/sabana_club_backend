@@ -30,4 +30,6 @@ pub trait TournamentRepository: Send + Sync {
     async fn delete_tournament(&self, tournament_id: &str) -> Result<()>;
 
     async fn get_tournament_positions(&self, tournament_id: &str) -> Result<Vec<u32>>;
+
+    async fn get_tournament(&self, tournament_id: &str) -> Result<Tournament>;
 }

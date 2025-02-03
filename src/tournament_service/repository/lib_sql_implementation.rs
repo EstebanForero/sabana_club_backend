@@ -2,7 +2,7 @@ use super::err::Result;
 use std::sync::Arc;
 
 use async_trait::async_trait;
-use libsql::params;
+use libsql::{de, params};
 
 use crate::tournament_service::domain::{
     Tournament, UserTournamentInfo, UserTournamentRegistration,
@@ -37,6 +37,31 @@ impl TournamentRepositoryImpl {
 
 #[async_trait]
 impl TournamentRepository for TournamentRepositoryImpl {
+    async fn get_tournament(&self, tournament_id: &str) -> Result<Tournament> {
+        let conn = self.get_connection().await?;
+
+        let mut row = conn
+            .query(
+                "SELECT id_torneo, nombre FROM torneo WHERE id_torneo = ?1",
+                params![tournament_id],
+            )
+            .await
+            .map_err(|e| TournamentRepositoryError::DatabaseError(e.to_string()))?;
+
+        if let Some(row) = row
+            .next()
+            .await
+            .map_err(|e| TournamentRepositoryError::DatabaseError(e.to_string()))?
+        {
+            let tournament = de::from_row(&row)
+                .map_err(|e| TournamentRepositoryError::DatabaseError(e.to_string()))?;
+
+            Ok(tournament)
+        } else {
+            return Err(TournamentRepositoryError::TournamentNotFound);
+        }
+    }
+
     async fn get_tournament_positions(&self, tournament_id: &str) -> Result<Vec<u32>> {
         let conn = self.get_connection().await?;
 

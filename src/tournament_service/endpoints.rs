@@ -53,6 +53,7 @@ impl HttpService for TournamentHttpServer {
                 "/tournament/positions/{tournament_id}",
                 get(get_tournament_positions),
             )
+            .route("/tournament/id/{tournament_id}", get(get_tournament))
             .layer(middleware::from_fn_with_state(
                 self.token_key.clone(),
                 auth_middleware,
@@ -73,6 +74,19 @@ impl HttpService for TournamentHttpServer {
                 post(get_users_in_tournament),
             )
             .with_state(tournament_service)
+    }
+}
+
+async fn get_tournament(
+    State(state): State<TournamentService>,
+    Path(tournament_id): Path<String>,
+) -> Result<Json<Tournament>, StatusCode> {
+    match state.get_tournament(&tournament_id).await {
+        Err(err) => {
+            error!("Error getting tournament by id: {err}");
+            Err(StatusCode::INTERNAL_SERVER_ERROR)
+        }
+        Ok(user_tournaments_info) => Ok(Json(user_tournaments_info)),
     }
 }
 
