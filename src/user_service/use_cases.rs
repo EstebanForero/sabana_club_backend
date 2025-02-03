@@ -31,6 +31,14 @@ impl UserService {
         }
     }
 
+    pub async fn update_user_rol(&self, user_role: UserRol, user_id: &str) -> Result<()> {
+        self.user_repository
+            .update_user_role(user_role, user_id)
+            .await?;
+
+        Ok(())
+    }
+
     pub async fn user_rol(&self, user_id: &str) -> Result<UserRol> {
         let result = self.user_repository.user_rol(user_id).await?;
 

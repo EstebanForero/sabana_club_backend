@@ -49,6 +49,17 @@ pub enum UserRol {
     Entrenador,
 }
 
+impl ToString for UserRol {
+    fn to_string(&self) -> String {
+        match self {
+            UserRol::Usuario => "Usuario",
+            UserRol::Admin => "Admin",
+            UserRol::Entrenador => "Entrenador",
+        }
+        .to_string()
+    }
+}
+
 #[derive(Deserialize, Serialize, Debug)]
 pub enum SearchSelection {
     Email,

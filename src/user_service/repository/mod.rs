@@ -31,4 +31,6 @@ pub trait UserRepository: Send + Sync {
         limit: u8,
         search_parameter: SearchSelection,
     ) -> Result<Vec<UserSelectionInfo>>;
+
+    async fn update_user_role(&self, user_role: UserRol, user_id: &str) -> Result<()>;
 }

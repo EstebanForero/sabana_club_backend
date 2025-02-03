@@ -52,6 +52,7 @@ impl HttpService for UserHttpServer {
             .route("/user/admin", get(user_rol))
             .route("/user", put(update_user))
             .route("/user/id/{user_id}", put(update_other_user))
+            .route("/user/role/{user_role}/{user_id}", put(update_user_rol))
             .layer(middleware::from_fn_with_state(
                 self.token_key.clone(),
                 auth_middleware,
@@ -70,6 +71,19 @@ impl HttpService for UserHttpServer {
 
 async fn test_auth() -> &'static str {
     "Test for auth"
+}
+
+async fn update_user_rol(
+    State(service): State<UserService>,
+    Path(path_info): Path<(UserRol, String)>,
+) -> StatusCode {
+    match service.update_user_rol(path_info.0, &path_info.1).await {
+        Err(err) => {
+            error!("Error updating the user rol: {err}");
+            StatusCode::INTERNAL_SERVER_ERROR
+        }
+        Ok(_) => StatusCode::OK,
+    }
 }
 
 async fn user_rol(

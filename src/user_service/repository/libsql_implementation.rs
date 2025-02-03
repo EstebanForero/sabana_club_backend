@@ -194,4 +194,16 @@ impl UserRepository for LibSqlUserRepository {
             Err(UserRepositoryError::UserNotFound)
         }
     }
+
+    async fn update_user_role(&self, user_role: UserRol, user_id: &str) -> Result<()> {
+        let conn = self.get_connection().await?;
+
+        conn.execute(
+            "UPDATE persona SET nombre_rol = ?1 WHERE id_persona = ?2",
+            params![user_role.to_string(), user_id],
+        )
+        .await?;
+
+        Ok(())
+    }
 }
