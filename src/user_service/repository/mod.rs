@@ -3,6 +3,7 @@ use super::domain::UserCreationInfo;
 
 pub mod err;
 use super::domain::UserInfo;
+use super::domain::UserRol;
 use super::domain::UserSelectionInfo;
 use super::domain::UserUpdating;
 use async_trait::async_trait;
@@ -20,7 +21,7 @@ pub trait UserRepository: Send + Sync {
     async fn get_users(&self) -> Result<Vec<UserInfo>>;
     async fn get_user_by_id(&self, user_id: &String) -> Result<UserInfo>;
 
-    async fn user_is_admin(&self, user_id: &str) -> Result<bool>;
+    async fn user_rol(&self, user_id: &str) -> Result<UserRol>;
 
     async fn modify_user(&self, updated_user_info: UserUpdating, user_id: &str) -> Result<()>;
 

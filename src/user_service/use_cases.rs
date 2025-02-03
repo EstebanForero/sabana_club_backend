@@ -4,7 +4,9 @@ use bcrypt::{hash, verify, DEFAULT_COST};
 
 use crate::unique_identifier_service::usecases::UniqueIdentifier;
 
-use super::domain::{SearchSelection, UserCreationInfo, UserInfo, UserSelectionInfo, UserUpdating};
+use super::domain::{
+    SearchSelection, UserCreationInfo, UserInfo, UserRol, UserSelectionInfo, UserUpdating,
+};
 use super::err::{Result, UserServiceError};
 use super::repository::UserRepository;
 use super::token_provider::TokenProvider;
@@ -29,8 +31,8 @@ impl UserService {
         }
     }
 
-    pub async fn user_is_admin(&self, user_id: &str) -> Result<bool> {
-        let result = self.user_repository.user_is_admin(user_id).await?;
+    pub async fn user_rol(&self, user_id: &str) -> Result<UserRol> {
+        let result = self.user_repository.user_rol(user_id).await?;
 
         Ok(result)
     }

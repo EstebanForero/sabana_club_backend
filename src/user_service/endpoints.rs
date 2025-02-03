@@ -11,7 +11,7 @@ use crate::auth_middleware::auth_middleware;
 use crate::global_traits::HttpService;
 use crate::unique_identifier_service::usecases::UniqueIdentifier;
 
-use super::domain::{SearchSelection, UserInfo, UserSelectionInfo, UserUpdating};
+use super::domain::{SearchSelection, UserInfo, UserRol, UserSelectionInfo, UserUpdating};
 use super::repository::UserRepository;
 use super::token_provider::TokenProvider;
 use super::{domain::UserCreationInfo, use_cases::UserService};
@@ -49,7 +49,7 @@ impl HttpService for UserHttpServer {
         Router::new()
             .route("/test_auth", get(test_auth))
             .route("/user", get(get_user))
-            .route("/user/admin", get(is_admin))
+            .route("/user/admin", get(user_rol))
             .route("/user", put(update_user))
             .route("/user/id/{user_id}", put(update_other_user))
             .layer(middleware::from_fn_with_state(
@@ -72,11 +72,11 @@ async fn test_auth() -> &'static str {
     "Test for auth"
 }
 
-async fn is_admin(
+async fn user_rol(
     State(service): State<UserService>,
     Extension(user_id): Extension<String>,
-) -> Result<Json<bool>, StatusCode> {
-    match service.user_is_admin(&user_id).await {
+) -> Result<Json<UserRol>, StatusCode> {
+    match service.user_rol(&user_id).await {
         Err(err) => {
             error!("Error in is admin: {err}");
             Err(StatusCode::INTERNAL_SERVER_ERROR)

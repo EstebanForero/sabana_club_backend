@@ -5,7 +5,7 @@ use axum::{
     extract::{Path, State},
     http::StatusCode,
     middleware,
-    routing::{get, post},
+    routing::{delete, get, post},
     Extension, Json, Router,
 };
 use serde::{Deserialize, Serialize};
@@ -46,6 +46,10 @@ impl HttpService for TrainingHttpServer {
     fn get_router(&self) -> Router {
         Router::new()
             .route("/training", get(get_trainings_for_user_with_extension))
+            .route(
+                "/training/delete/{id_entrenamiento}",
+                delete(delete_training),
+            )
             .layer(middleware::from_fn_with_state(
                 self.token_key.clone(),
                 auth_middleware,
@@ -68,6 +72,18 @@ struct TrainingInfo {
     tiempo_minutos: i32,
 }
 
+async fn delete_training(
+    State(state): State<Arc<TrainingService>>,
+    Path(training_id): Path<String>,
+) -> StatusCode {
+    match state.delete_training(&training_id).await {
+        Err(err) => {
+            error!("Error deleting training: {err}");
+            StatusCode::INTERNAL_SERVER_ERROR
+        }
+        Ok(_) => StatusCode::OK,
+    }
+}
 async fn get_trainings_for_user_with_extension(
     State(state): State<Arc<TrainingService>>,
     Extension(user_id): Extension<String>,

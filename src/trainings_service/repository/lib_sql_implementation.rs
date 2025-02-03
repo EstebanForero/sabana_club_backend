@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use async_trait::async_trait;
+use libsql::params;
 
 use crate::trainings_service::model::{Training, TrainingRegistration};
 
@@ -30,6 +31,19 @@ impl TrainingRepositoryImpl {
 
 #[async_trait]
 impl TrainingRepository for TrainingRepositoryImpl {
+    async fn delete_training(&self, training_id: &str) -> Result<()> {
+        let conn = self.get_connection().await?;
+
+        conn.execute(
+            "DELETE FROM entrenamiento WHERE id_entrenamiento = ?1",
+            params![training_id],
+        )
+        .await
+        .map_err(|e| TrainingRepositoryError::DatabaseError(e.to_string()))?;
+
+        Ok(())
+    }
+
     async fn create_training(&self, training: Training) -> Result<()> {
         let conn = self.get_connection().await?;
         conn.execute(

@@ -27,7 +27,7 @@ pub struct UserInfo {
     pub telefono: u64,
     pub identificacion: String,
     pub nombre_tipo_identificacion: String,
-    pub es_admin: bool,
+    pub nombre_rol: UserRol,
 }
 
 #[derive(Deserialize, Serialize)]
@@ -38,8 +38,15 @@ pub struct UserSelectionInfo {
     pub telefono: u64,
     pub identificacion: String,
     pub nombre_tipo_identificacion: String,
-    pub es_admin: bool,
+    pub nombre_rol: UserRol,
     pub matricula_valida: bool,
+}
+
+#[derive(Deserialize, Serialize, Debug)]
+pub enum UserRol {
+    Usuario,
+    Admin,
+    Entrenador,
 }
 
 #[derive(Deserialize, Serialize, Debug)]

@@ -1,6 +1,7 @@
 use crate::user_service::domain::SearchSelection;
 use crate::user_service::domain::UserCreationInfo;
 use crate::user_service::domain::UserInfo;
+use crate::user_service::domain::UserRol;
 use crate::user_service::domain::UserSelectionInfo;
 use crate::user_service::domain::UserUpdating;
 use async_trait::async_trait;
@@ -175,18 +176,18 @@ impl UserRepository for LibSqlUserRepository {
         Ok(())
     }
 
-    async fn user_is_admin(&self, user_id: &str) -> Result<bool> {
+    async fn user_rol(&self, user_id: &str) -> Result<UserRol> {
         let conn = self.get_connection().await?;
         let mut rows = conn
             .query(
-                "SELECT es_admin FROM persona WHERE id_persona = ?1 LIMIT 1",
+                "SELECT nombre_rol FROM persona WHERE id_persona = ?1 LIMIT 1",
                 params![user_id],
             )
             .await?;
 
         if let Some(row) = rows.next().await? {
-            let is_admin: bool = row.get(0)?;
-            Ok(is_admin)
+            let nombre_rol: UserRol = de::from_row(&row)?;
+            Ok(nombre_rol)
         } else {
             Err(UserRepositoryError::UserNotFound)
         }
