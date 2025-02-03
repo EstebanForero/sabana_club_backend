@@ -105,7 +105,7 @@ impl TournamentRepository for TournamentRepositoryImpl {
         let conn = self.get_connection().await?;
 
         conn.execute(
-            "DELETE torneo WHERE id_torneo = ?1",
+            "DELETE FROM torneo WHERE id_torneo = ?1",
             libsql::params![tournament_id],
         )
         .await
