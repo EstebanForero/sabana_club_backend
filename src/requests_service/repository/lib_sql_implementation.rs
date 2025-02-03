@@ -182,8 +182,9 @@ mod tests {
             "requester_id": "12345",
             "request_id": "54321",
             "command_name": "UpdateUserCommand",
+            "completed" : false,
             "command_content": {
-                "UpdateUser": {
+                    "type": "UpdateUser",
                     "user_updation": {
                         "nombre": "Esteban",
                         "correo": "estebanmff@gmail.com",
@@ -192,7 +193,6 @@ mod tests {
                         "nombre_tipo_identificacion": "CC"
                     },
                     "user_id": "5f405541-d1df-454a-b2fc-56004ba380cc"
-                }
             },
             "aprover_id": "67890"
         }

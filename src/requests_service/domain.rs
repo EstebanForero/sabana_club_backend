@@ -1,9 +1,11 @@
 use serde::{Deserialize, Serialize};
+use thiserror::Error;
 
 use crate::{
-    tournament_service::use_cases::TournamentService,
+    tournament_service::{err::TournamentServiceError, use_cases::TournamentService},
     user_service::{
         domain::{UserCreationInfo, UserUpdating},
+        err::UserServiceError,
         use_cases::UserService,
     },
 };
@@ -56,10 +58,14 @@ pub struct RequestCreation {
 }
 
 #[derive(Debug, Deserialize, Serialize, PartialEq)]
+#[serde(tag = "type")]
 pub enum RequestContent {
     UpdateUser {
         user_updation: UserUpdating,
         user_id: String,
+    },
+    DeleteTournament {
+        tournament_id: String,
     },
 }
 
@@ -67,6 +73,7 @@ impl RequestContent {
     pub fn get_name(&self) -> String {
         match &self {
             RequestContent::UpdateUser { .. } => "update_user",
+            RequestContent::DeleteTournament { .. } => "delete_tournament",
         }
         .to_string()
     }
@@ -79,7 +86,10 @@ pub struct CommandExecutor {
 }
 
 impl CommandExecutor {
-    pub async fn execute_command(&self, request_content: RequestContent) -> Result<()> {
+    pub async fn execute_command(
+        &self,
+        request_content: RequestContent,
+    ) -> std::result::Result<(), CommandError> {
         match request_content {
             RequestContent::UpdateUser {
                 user_updation,
@@ -89,8 +99,21 @@ impl CommandExecutor {
                     .update_user(user_updation, &user_id)
                     .await?;
             }
+            RequestContent::DeleteTournament { tournament_id } => {
+                self.tournament_service
+                    .delete_tournament(&tournament_id)
+                    .await?;
+            }
         }
 
         Ok(())
     }
+}
+
+#[derive(Error, Debug)]
+pub enum CommandError {
+    #[error("Error executing commad in the user service")]
+    UserServiceError(#[from] UserServiceError),
+    #[error("Error executing commad in the user service")]
+    TournamentServiceError(#[from] TournamentServiceError),
 }
