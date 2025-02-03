@@ -7,6 +7,7 @@ use crate::user_service::domain::UserUpdating;
 use async_trait::async_trait;
 use libsql::{de, params, Connection, Database};
 use serde::Deserialize;
+use serde_json::json;
 use std::collections::HashMap;
 use std::result;
 use std::sync::Arc;
@@ -186,7 +187,8 @@ impl UserRepository for LibSqlUserRepository {
             .await?;
 
         if let Some(row) = rows.next().await? {
-            let nombre_rol: UserRol = de::from_row(&row)?;
+            let string_role = &row.get::<String>(0)?;
+            let nombre_rol: UserRol = serde_json::from_str(&json!(string_role).to_string())?;
             Ok(nombre_rol)
         } else {
             Err(UserRepositoryError::UserNotFound)

@@ -15,4 +15,6 @@ pub enum UserRepositoryError {
     DeserializationError(#[from] serde::de::value::Error),
     #[error("chrono date operation error: {0}")]
     DateOperationError(#[from] chrono::ParseError),
+    #[error("serde json error: {0}")]
+    SerdeJsonError(#[from] serde_json::Error),
 }
