@@ -41,9 +41,9 @@ impl UserRepository for LibSqlUserRepository {
         let conn = self.get_connection().await?;
         conn.execute(
             "INSERT INTO persona (
-                id_persona, nombre, contrasena, correo, telefono, identificacion, nombre_tipo_identificacion, es_admin
+                id_persona, nombre, contrasena, correo, telefono, identificacion, nombre_tipo_identificacion, nombre_rol
             ) VALUES (
-                ?, ?, ?, ?, ?, ?, ?, 0
+                ?, ?, ?, ?, ?, ?, ?, 'Usuario'
             )",
             params![
                 uuid::Uuid::new_v4().to_string(),
@@ -81,7 +81,7 @@ impl UserRepository for LibSqlUserRepository {
         let conn = self.get_connection().await?;
         let mut rows = conn
             .query(
-                "SELECT id_persona, nombre, correo, telefono, identificacion, nombre_tipo_identificacion, es_admin FROM persona",
+                "SELECT id_persona, nombre, correo, telefono, identificacion, nombre_tipo_identificacion, nombre_rol FROM persona",
                 libsql::params![],
             )
             .await?;
@@ -99,7 +99,7 @@ impl UserRepository for LibSqlUserRepository {
         let conn = self.get_connection().await?;
         let mut rows = conn
             .query(
-                "SELECT id_persona, nombre, correo, telefono, identificacion, nombre_tipo_identificacion, es_admin FROM persona WHERE id_persona = ?1",
+                "SELECT id_persona, nombre, correo, telefono, identificacion, nombre_tipo_identificacion, nombre_rol FROM persona WHERE id_persona = ?1",
                 libsql::params![user_id.clone()],
             )
             .await?;
@@ -129,7 +129,7 @@ impl UserRepository for LibSqlUserRepository {
 
         let query = format!(
             "SELECT p.id_persona, p.nombre, p.correo, p.telefono,
-                p.identificacion, p.nombre_tipo_identificacion, p.es_admin,
+                p.identificacion, p.nombre_tipo_identificacion, p.nombre_rol,
                 CASE 
                     WHEN (JULIANDAY(DATE('now')) - JULIANDAY(MAX(m.fecha_inscripccion))) > 30 OR MAX(m.fecha_inscripccion) IS NULL THEN FALSE
                     ELSE TRUE
