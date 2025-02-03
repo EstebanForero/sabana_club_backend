@@ -1,4 +1,6 @@
 pub mod err;
+use std::sync::Arc;
+
 use super::domain::{Tournament, UserTournamentInfo, UserTournamentRegistration};
 use async_trait::async_trait;
 use err::Result;
@@ -26,4 +28,6 @@ pub trait TournamentRepository: Send + Sync {
         -> Result<Vec<UserTournamentInfo>>;
 
     async fn delete_tournament(&self, tournament_id: &str) -> Result<()>;
+
+    async fn get_tournament_positions(&self, tournament_id: &str) -> Result<Vec<u32>>;
 }

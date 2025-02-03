@@ -49,6 +49,10 @@ impl HttpService for TournamentHttpServer {
 
         Router::new()
             .route("/tournament", get(get_tournament_by_user_with_extension))
+            .route(
+                "/tournament/positions/{tournament_id}",
+                get(get_tournament_positions),
+            )
             .layer(middleware::from_fn_with_state(
                 self.token_key.clone(),
                 auth_middleware,
@@ -69,6 +73,19 @@ impl HttpService for TournamentHttpServer {
                 post(get_users_in_tournament),
             )
             .with_state(tournament_service)
+    }
+}
+
+async fn get_tournament_positions(
+    State(state): State<TournamentService>,
+    Path(tournament_id): Path<String>,
+) -> Result<Json<Vec<u32>>, StatusCode> {
+    match state.get_tournament_positions(&tournament_id).await {
+        Err(err) => {
+            error!("Error getting tournament positions: {err}");
+            Err(StatusCode::INTERNAL_SERVER_ERROR)
+        }
+        Ok(tournament_positions) => Ok(Json(tournament_positions)),
     }
 }
 

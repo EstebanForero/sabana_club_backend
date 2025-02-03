@@ -25,6 +25,15 @@ impl TournamentService {
         }
     }
 
+    pub async fn get_tournament_positions(&self, tournament_id: &str) -> Result<Vec<u32>> {
+        let positions = self
+            .tournament_repository
+            .get_tournament_positions(tournament_id)
+            .await?;
+
+        Ok(positions)
+    }
+
     pub async fn delete_tournament(&self, tournament_id: &str) -> Result<()> {
         self.tournament_repository
             .delete_tournament(tournament_id)
