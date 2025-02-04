@@ -13,6 +13,10 @@ use crate::{
     auth_middleware::auth_middleware,
     global_traits::HttpService,
     tournament_service::{repository::TournamentRepository, use_cases::TournamentService},
+    trainings_service::{
+        repository::{lib_sql_implementation::TrainingRepositoryImpl, TrainingRepository},
+        use_cases::TrainingService,
+    },
     unique_identifier_service::usecases::UniqueIdentifier,
     user_service::{
         repository::UserRepository, token_provider::TokenProvider, use_cases::UserService,
@@ -29,6 +33,7 @@ pub struct RequestHttpServer {
     user_repository: Arc<dyn UserRepository>,
     tournament_repository: Arc<dyn TournamentRepository>,
     unique_identifier: Arc<dyn UniqueIdentifier>,
+    training_repository: Arc<dyn TrainingRepository>,
     request_repository: Arc<dyn RequestRepository>,
     token_key: String,
 }
@@ -38,6 +43,7 @@ impl RequestHttpServer {
         user_repository: Arc<dyn UserRepository>,
         tournament_repository: Arc<dyn TournamentRepository>,
         request_repository: Arc<dyn RequestRepository>,
+        training_repository: Arc<dyn TrainingRepository>,
         unique_identifier: Arc<dyn UniqueIdentifier>,
         token_key: String,
     ) -> Self {
@@ -47,6 +53,7 @@ impl RequestHttpServer {
             unique_identifier,
             token_key,
             request_repository,
+            training_repository,
         }
     }
 }
@@ -66,9 +73,15 @@ impl HttpService for RequestHttpServer {
             self.unique_identifier.clone(),
         );
 
+        let training_service = TrainingService::new(
+            self.training_repository.clone(),
+            self.unique_identifier.clone(),
+        );
+
         let command_executor = CommandExecutor {
             user_service,
             tournament_service,
+            training_service,
         };
 
         let request_service =

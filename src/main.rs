@@ -119,6 +119,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
                 user_repository.clone(),
                 tournament_repository.clone(),
                 request_repository.clone(),
+                training_repository.clone(),
                 unique_identifier.clone(),
                 config.token_key.to_string(),
             )

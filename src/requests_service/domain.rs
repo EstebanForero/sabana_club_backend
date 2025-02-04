@@ -3,14 +3,13 @@ use thiserror::Error;
 
 use crate::{
     tournament_service::{err::TournamentServiceError, use_cases::TournamentService},
+    trainings_service::use_cases::TrainingService,
     user_service::{
         domain::{UserCreationInfo, UserUpdating},
         err::UserServiceError,
         use_cases::UserService,
     },
 };
-
-use super::err::Result;
 
 #[derive(Debug, Deserialize, Serialize, PartialEq)]
 pub struct RequestForApproval {
@@ -67,6 +66,9 @@ pub enum RequestContent {
     DeleteTournament {
         tournament_id: String,
     },
+    DeleteTraining {
+        training_id: String,
+    },
 }
 
 impl RequestContent {
@@ -74,6 +76,7 @@ impl RequestContent {
         match &self {
             RequestContent::UpdateUser { .. } => "update_user",
             RequestContent::DeleteTournament { .. } => "delete_tournament",
+            RequestContent::DeleteTraining { .. } => "delete_training",
         }
         .to_string()
     }
@@ -83,6 +86,7 @@ impl RequestContent {
 pub struct CommandExecutor {
     pub user_service: UserService,
     pub tournament_service: TournamentService,
+    pub training_service: TrainingService,
 }
 
 impl CommandExecutor {
@@ -103,6 +107,9 @@ impl CommandExecutor {
                 self.tournament_service
                     .delete_tournament(&tournament_id)
                     .await?;
+            }
+            RequestContent::DeleteTraining { training_id } => {
+                self.training_service.delete_training(&training_id);
             }
         }
 
