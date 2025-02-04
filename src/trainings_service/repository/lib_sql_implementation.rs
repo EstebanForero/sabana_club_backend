@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use async_trait::async_trait;
-use libsql::params;
+use libsql::{de, params};
 
 use crate::trainings_service::model::{Training, TrainingRegistration};
 
@@ -31,6 +31,33 @@ impl TrainingRepositoryImpl {
 
 #[async_trait]
 impl TrainingRepository for TrainingRepositoryImpl {
+    async fn get_training(&self, training_id: &str) -> Result<Training> {
+        let conn = self.get_connection().await?;
+
+        let mut rows = conn
+            .query(
+                "SELECT id_entrenamiento, tiempo_minutos, nombre_entrenamiento FROM entrenamiento WHERE id_entrenamiento = ?1",
+                libsql::params![training_id],
+            )
+            .await
+            .map_err(|e| TrainingRepositoryError::DatabaseError(e.to_string()))?;
+
+        if let Some(row) = rows
+            .next()
+            .await
+            .map_err(|e| TrainingRepositoryError::DatabaseError(e.to_string()))?
+        {
+            let training = de::from_row(&row)
+                .map_err(|e| TrainingRepositoryError::DatabaseError(e.to_string()))?;
+
+            Ok(training)
+        } else {
+            Err(TrainingRepositoryError::DatabaseError(
+                "Value not found".to_string(),
+            ))
+        }
+    }
+
     async fn delete_training(&self, training_id: &str) -> Result<()> {
         let conn = self.get_connection().await?;
 

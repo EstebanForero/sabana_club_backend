@@ -26,6 +26,12 @@ impl TrainingService {
         }
     }
 
+    pub async fn get_training(&self, training_id: &str) -> Result<Training> {
+        let training = self.training_repository.get_training(training_id).await?;
+
+        Ok(training)
+    }
+
     pub async fn delete_training(&self, training_id: &str) -> Result<()> {
         self.training_repository
             .delete_training(training_id)

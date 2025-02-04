@@ -27,4 +27,6 @@ pub trait TrainingRepository: Send + Sync {
     async fn get_trainings_for_user(&self, user_id: &str) -> Result<Vec<Training>>;
 
     async fn delete_training(&self, training_id: &str) -> Result<()>;
+
+    async fn get_training(&self, training_id: &str) -> Result<Training>;
 }

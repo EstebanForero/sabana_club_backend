@@ -50,6 +50,7 @@ impl HttpService for TrainingHttpServer {
                 "/training/delete/{id_entrenamiento}",
                 delete(delete_training),
             )
+            .route("/training/id/{id_entrenamiento}", get(get_training))
             .layer(middleware::from_fn_with_state(
                 self.token_key.clone(),
                 auth_middleware,
@@ -70,6 +71,19 @@ impl HttpService for TrainingHttpServer {
 struct TrainingInfo {
     nombre_entrenamiento: String,
     tiempo_minutos: i32,
+}
+
+async fn get_training(
+    State(state): State<Arc<TrainingService>>,
+    Path(training_id): Path<String>,
+) -> Result<Json<Training>, StatusCode> {
+    match state.get_training(&training_id).await {
+        Err(err) => {
+            error!("Error getting trainings for id: {err}");
+            Err(StatusCode::INTERNAL_SERVER_ERROR)
+        }
+        Ok(user_trainings) => Ok(Json(user_trainings)),
+    }
 }
 
 async fn delete_training(
