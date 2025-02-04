@@ -3,7 +3,7 @@ use thiserror::Error;
 
 use crate::{
     tournament_service::{err::TournamentServiceError, use_cases::TournamentService},
-    trainings_service::use_cases::TrainingService,
+    trainings_service::{err::TrainingServiceError, use_cases::TrainingService},
     user_service::{
         domain::{UserCreationInfo, UserUpdating},
         err::UserServiceError,
@@ -109,7 +109,7 @@ impl CommandExecutor {
                     .await?;
             }
             RequestContent::DeleteTraining { training_id } => {
-                self.training_service.delete_training(&training_id);
+                self.training_service.delete_training(&training_id).await?;
             }
         }
 
@@ -121,6 +121,8 @@ impl CommandExecutor {
 pub enum CommandError {
     #[error("Error executing commad in the user service")]
     UserServiceError(#[from] UserServiceError),
-    #[error("Error executing commad in the user service")]
+    #[error("Error executing commad in the tournament service")]
     TournamentServiceError(#[from] TournamentServiceError),
+    #[error("Error executing commad in the trainnig service")]
+    TrainingServiceError(#[from] TrainingServiceError),
 }
