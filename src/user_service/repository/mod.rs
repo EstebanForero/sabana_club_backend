@@ -16,10 +16,10 @@ pub mod libsql_implementation;
 #[async_trait]
 pub trait UserRepository: Send + Sync {
     async fn create_user(&self, user_creation_info: UserCreationInfo) -> Result<()>;
-    async fn get_user_password(&self, user_id: &String) -> Result<String>;
+    async fn get_user_password(&self, user_id: &str) -> Result<String>;
 
     async fn get_users(&self) -> Result<Vec<UserInfo>>;
-    async fn get_user_by_id(&self, user_id: &String) -> Result<UserInfo>;
+    async fn get_user_by_id(&self, user_id: &str) -> Result<UserInfo>;
 
     async fn user_rol(&self, user_id: &str) -> Result<UserRol>;
 
